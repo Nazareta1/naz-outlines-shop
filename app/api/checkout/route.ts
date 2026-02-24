@@ -8,13 +8,12 @@ if (!stripeSecretKey) {
   throw new Error("Missing STRIPE_SECRET_KEY in env");
 }
 
-const stripe = new Stripe(stripeSecretKey, {
-});
+const stripe = new Stripe(stripeSecretKey);
 
 type CheckoutItem = {
-  id: string;
+  id: string;      // tavo DB Product.id
   name: string;
-  price: number; // EUR
+  price: number;   // EUR
   quantity: number;
 };
 
@@ -48,7 +47,12 @@ export async function POST(req: Request) {
     }
 
     for (const it of items) {
-      if (!it?.id || !it?.name || typeof it.price !== "number" || typeof it.quantity !== "number") {
+      if (
+        !it?.id ||
+        !it?.name ||
+        typeof it.price !== "number" ||
+        typeof it.quantity !== "number"
+      ) {
         return NextResponse.json({ error: "Invalid items payload" }, { status: 400 });
       }
       if (it.price <= 0 || it.quantity <= 0) {
@@ -66,7 +70,7 @@ export async function POST(req: Request) {
       billing_address_collection: "required",
       allow_promotion_codes: true,
 
-      // labai rekomenduoju: kad Stripe įraše matytum kas buvo pirkta
+      // kad Stripe įraše matytum šaltinį
       metadata: {
         source: "naz-outlines-shop",
       },
@@ -76,6 +80,11 @@ export async function POST(req: Request) {
         price_data: {
           currency: "eur",
           unit_amount: Math.round(it.price * 100),
+
+          // ✅ SVARBIAUSIA: productId įrašom į PRICE metadata
+          metadata: { productId: it.id },
+
+          // Optional: paliekam ir product metadata (nebūtina, bet ok)
           product_data: {
             name: it.name,
             metadata: { productId: it.id },

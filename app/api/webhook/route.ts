@@ -13,7 +13,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
  * - Stripe.Product (has metadata)
  * - Stripe.DeletedProduct (has deleted: true, no metadata)
  */
-function getInternalProductId(
+function getInternalProductIdFromProduct(
   product: Stripe.Product | Stripe.DeletedProduct | string | null | undefined
 ): string | undefined {
   if (!product) return undefined;
@@ -31,6 +31,7 @@ async function listAllLineItems(sessionId: string) {
       await stripe.checkout.sessions.listLineItems(sessionId, {
         limit: 100,
         starting_after,
+        // expand product kad fallback atveju būtų metadata (bet pagrindas yra price.metadata)
         expand: ["data.price.product"],
       });
 
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
-    const body = await req.text(); // raw body
+    const body = await req.text(); // IMPORTANT: raw body
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
@@ -133,7 +134,7 @@ export async function POST(req: Request) {
           },
         });
 
-        // 3) Get Line Items the reliable way (listLineItems)
+        // 3) Get Line Items (reliable)
         const lineItems = await listAllLineItems(stripeSessionId);
 
         // 4) Idempotency for items: delete then recreate
@@ -141,14 +142,19 @@ export async function POST(req: Request) {
 
         const createItems = lineItems.map((li) => {
           const price = li.price;
-          const prod = price?.product;
 
-          const internalProductId = getInternalProductId(prod);
+          // ✅ PAGRINDAS: productId iš PRICE metadata (nes price_data.metadata mes įrašom checkout'e)
+          const fromPrice = price?.metadata?.productId;
+
+          // Fallback: jei kažkada naudosi Stripe katalogo produktus su metadata
+          const fromProduct = getInternalProductIdFromProduct(price?.product);
+
+          const internalProductId = fromPrice || fromProduct;
 
           if (!internalProductId) {
             throw new Error(
-              `Missing metadata.productId on Stripe Product. ` +
-                `Set Stripe Product metadata.productId = your DB Product.id. ` +
+              `Missing productId mapping. ` +
+                `Expected price.metadata.productId (recommended) or product.metadata.productId. ` +
                 `(session=${stripeSessionId})`
             );
           }
