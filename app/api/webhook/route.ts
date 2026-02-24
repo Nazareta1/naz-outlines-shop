@@ -89,6 +89,8 @@ export async function POST(req: Request) {
         const shippingCents = full.total_details?.amount_shipping ?? 0;
 
         // 2) upsert Order (idempotent)
+        // ✅ paymentStatus = paid
+        // ✅ fulfillmentStatus = unfulfilled (tik kuriant; update metu neliečiam, kad neperrašyt admin veiksmų)
         const order = await prisma.order.upsert({
           where: { stripeSessionId },
           update: {
@@ -115,6 +117,7 @@ export async function POST(req: Request) {
             stripeSessionId,
             stripePaymentId,
             paymentStatus: "paid",
+            fulfillmentStatus: "unfulfilled",
 
             email: cd?.email ?? null,
             name: cd?.name ?? null,

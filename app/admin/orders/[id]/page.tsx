@@ -7,19 +7,25 @@ export const dynamic = "force-dynamic";
 
 function formatMoney(cents: number, currency: string) {
   const amount = (cents / 100).toFixed(2);
-  return currency?.toUpperCase() === "EUR" ? `${amount} €` : `${amount} ${currency}`;
+  return currency?.toUpperCase() === "EUR"
+    ? `${amount} €`
+    : `${amount} ${currency}`;
 }
 
 function statusBadge(status: string) {
   const s = (status || "").toLowerCase();
 
+  // payment
   if (s === "paid") return "bg-green-100 text-green-800 border-green-200";
-  if (s === "fulfilled") return "bg-blue-100 text-blue-800 border-blue-200";
-  if (s === "shipped") return "bg-purple-100 text-purple-800 border-purple-200";
-  if (s === "refunded") return "bg-gray-100 text-gray-800 border-gray-200";
-
   if (s === "pending") return "bg-yellow-100 text-yellow-800 border-yellow-200";
   if (s === "failed") return "bg-red-100 text-red-800 border-red-200";
+  if (s === "refunded") return "bg-gray-100 text-gray-800 border-gray-200";
+
+  // fulfillment
+  if (s === "unfulfilled") return "bg-slate-100 text-slate-800 border-slate-200";
+  if (s === "fulfilled") return "bg-blue-100 text-blue-800 border-blue-200";
+  if (s === "shipped") return "bg-purple-100 text-purple-800 border-purple-200";
+  if (s === "cancelled") return "bg-zinc-100 text-zinc-800 border-zinc-200";
 
   return "bg-slate-100 text-slate-800 border-slate-200";
 }
@@ -79,16 +85,39 @@ export default async function AdminOrderDetailPage({
             ← Back
           </Link>
 
-          <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
-                order.paymentStatus
-              )}`}
-            >
-              {order.paymentStatus}
-            </span>
+          {/* ✅ 2 statusai: Payment + Fulfillment */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
+                  order.paymentStatus
+                )}`}
+              >
+                {order.paymentStatus}
+              </span>
 
-            <StatusForm orderId={order.id} initialStatus={order.paymentStatus} />
+              <StatusForm
+                orderId={order.id}
+                type="payment"
+                initialStatus={order.paymentStatus}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
+                  order.fulfillmentStatus
+                )}`}
+              >
+                {order.fulfillmentStatus}
+              </span>
+
+              <StatusForm
+                orderId={order.id}
+                type="fulfillment"
+                initialStatus={order.fulfillmentStatus}
+              />
+            </div>
           </div>
         </div>
 
@@ -116,7 +145,9 @@ export default async function AdminOrderDetailPage({
                 </div>
               </div>
 
-              <h2 className="text-lg font-semibold mt-6 mb-2">Shipping address</h2>
+              <h2 className="text-lg font-semibold mt-6 mb-2">
+                Shipping address
+              </h2>
               <div className="text-sm text-gray-700 space-y-1">
                 <div>{order.addressLine1 || "—"}</div>
                 {order.addressLine2 ? <div>{order.addressLine2}</div> : null}
@@ -140,7 +171,8 @@ export default async function AdminOrderDetailPage({
                   {shortId(order.stripePaymentId)}
                 </div>
                 <div>
-                  <span className="text-gray-500">Currency:</span> {order.currency}
+                  <span className="text-gray-500">Currency:</span>{" "}
+                  {order.currency}
                 </div>
               </div>
 
@@ -197,7 +229,10 @@ export default async function AdminOrderDetailPage({
                       {formatMoney(item.priceCents, order.currency)}
                     </td>
                     <td className="p-3 font-semibold">
-                      {formatMoney(item.priceCents * item.quantity, order.currency)}
+                      {formatMoney(
+                        item.priceCents * item.quantity,
+                        order.currency
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -216,7 +251,6 @@ export default async function AdminOrderDetailPage({
       </div>
     );
   } catch (e: any) {
-    // ✅ kad Vercel loguose matytųsi tikras error
     console.error("Admin order detail page crashed:", e);
 
     return (

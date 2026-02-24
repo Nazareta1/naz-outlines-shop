@@ -3,34 +3,43 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-const STATUSES = ["paid", "fulfilled", "shipped", "refunded"] as const;
-type Status = (typeof STATUSES)[number];
+const PAYMENT = ["pending", "paid", "failed", "refunded"] as const;
+const FULFILL = ["unfulfilled", "fulfilled", "shipped", "cancelled"] as const;
+
+type PaymentStatus = (typeof PAYMENT)[number];
+type FulfillmentStatus = (typeof FULFILL)[number];
+type Type = "payment" | "fulfillment";
 
 export default function StatusForm({
   orderId,
+  type,
   initialStatus,
 }: {
   orderId: string;
+  type: Type;
   initialStatus: string;
 }) {
   const router = useRouter();
 
-  const normalized =
-    (STATUSES.includes(initialStatus.toLowerCase() as Status)
-      ? (initialStatus.toLowerCase() as Status)
-      : "paid") as Status;
+  const list = type === "payment" ? PAYMENT : FULFILL;
 
-  const [status, setStatus] = useState<Status>(normalized);
+  const normalized = String(initialStatus ?? "").toLowerCase();
+  const safeInitial = (list.includes(normalized as any) ? normalized : list[0]) as
+    | PaymentStatus
+    | FulfillmentStatus;
+
+  const [status, setStatus] = useState<typeof safeInitial>(safeInitial);
   const [isPending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string>("");
 
-  async function save() {
+  async function save(next?: string) {
     setMsg("");
+    const toSave = (next ?? status) as string;
 
     const res = await fetch(`/admin/orders/${orderId}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ type, status: toSave }),
     });
 
     if (!res.ok) {
@@ -40,31 +49,32 @@ export default function StatusForm({
     }
 
     setMsg("Saved ✅");
-    router.refresh(); // ✅ kad badge + puslapio duomenys atsinaujintų
+    router.refresh();
+    setTimeout(() => setMsg(""), 1200);
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
+      <div className="text-xs text-gray-500 min-w-[76px]">
+        {type === "payment" ? "Payment" : "Fulfillment"}
+      </div>
+
       <select
         className="border rounded-lg px-3 py-2 text-sm"
         value={status}
-        onChange={(e) => setStatus(e.target.value as Status)}
+        onChange={(e) => {
+          const v = e.target.value;
+          setStatus(v as any);
+          startTransition(() => save(v));
+        }}
         disabled={isPending}
       >
-        {STATUSES.map((s) => (
+        {list.map((s) => (
           <option key={s} value={s}>
             {s}
           </option>
         ))}
       </select>
-
-      <button
-        className="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50 disabled:opacity-60"
-        disabled={isPending}
-        onClick={() => startTransition(save)}
-      >
-        {isPending ? "Saving..." : "Save"}
-      </button>
 
       {msg ? <div className="text-xs text-gray-500">{msg}</div> : null}
     </div>
