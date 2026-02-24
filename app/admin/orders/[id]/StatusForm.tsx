@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 const STATUSES = ["paid", "fulfilled", "shipped", "refunded"] as const;
 type Status = (typeof STATUSES)[number];
@@ -12,6 +13,8 @@ export default function StatusForm({
   orderId: string;
   initialStatus: string;
 }) {
+  const router = useRouter();
+
   const normalized =
     (STATUSES.includes(initialStatus.toLowerCase() as Status)
       ? (initialStatus.toLowerCase() as Status)
@@ -23,7 +26,8 @@ export default function StatusForm({
 
   async function save() {
     setMsg("");
-    const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+
+    const res = await fetch(`/admin/orders/${orderId}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -36,6 +40,7 @@ export default function StatusForm({
     }
 
     setMsg("Saved ✅");
+    router.refresh(); // ✅ kad badge + puslapio duomenys atsinaujintų
   }
 
   return (
