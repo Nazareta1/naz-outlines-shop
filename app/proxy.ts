@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 function unauthorized() {
   return new NextResponse("Unauthorized", {
@@ -10,35 +9,51 @@ function unauthorized() {
   });
 }
 
-export function proxy(req: NextRequest) {
+function decodeBasicAuth(authHeader: string): { user: string; pass: string } | null {
+  if (!authHeader.toLowerCase().startsWith("basic ")) return null;
+
+  const base64 = authHeader.slice(6).trim();
+
+  try {
+    // Edge runtime friendly:
+    const decoded = atob(base64); // "user:pass"
+    const idx = decoded.indexOf(":");
+    if (idx === -1) return null;
+
+    const user = decoded.slice(0, idx);
+    const pass = decoded.slice(idx + 1);
+
+    return { user, pass };
+  } catch {
+    return null;
+  }
+}
+
+export default function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // Saugom /admin ir visus jo subroutes
+  // saugom tik admin
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
 
-  const user = process.env.ADMIN_USER;
-  const pass = process.env.ADMIN_PASSWORD;
+  const envUser = process.env.ADMIN_USER ?? "";
+  const envPass = process.env.ADMIN_PASSWORD ?? "";
 
-  // Jei nėra ENV – geriau blokuojam (kad netyčia neliktų admin atviras)
-  if (!user || !pass) {
-    return unauthorized();
+  // jei netyčia prod'e nėra env – geriau aiški klaida
+  if (!envUser || !envPass) {
+    return new NextResponse("Missing ADMIN_USER / ADMIN_PASSWORD in env", { status: 500 });
   }
 
-  const auth = req.headers.get("authorization") || "";
-  if (!auth.startsWith("Basic ")) return unauthorized();
+  const auth = req.headers.get("authorization");
+  if (!auth) return unauthorized();
 
-  const base64 = auth.slice("Basic ".length);
-  let decoded = "";
-  try {
-    decoded = Buffer.from(base64, "base64").toString("utf8");
-  } catch {
+  const creds = decodeBasicAuth(auth);
+  if (!creds) return unauthorized();
+
+  if (creds.user !== envUser || creds.pass !== envPass) {
     return unauthorized();
   }
-
-  const [u, p] = decoded.split(":");
-  if (u !== user || p !== pass) return unauthorized();
 
   return NextResponse.next();
 }
