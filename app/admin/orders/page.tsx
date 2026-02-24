@@ -5,52 +5,65 @@ export const dynamic = "force-dynamic";
 
 function formatMoney(cents: number, currency: string) {
   const amount = (cents / 100).toFixed(2);
-  // pas tave currency default "EUR", bet paliekam universalų
   return currency?.toUpperCase() === "EUR" ? `${amount} €` : `${amount} ${currency}`;
 }
 
-function shortId(id: string) {
-  if (!id) return "";
+function shortId(id?: string | null) {
+  if (!id) return "—";
   return id.length > 10 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id;
 }
 
 function statusBadge(status: string) {
   const s = (status || "").toLowerCase();
 
-  if (s === "paid") {
-    return "bg-green-100 text-green-800 border-green-200";
-  }
-  if (s === "pending") {
-    return "bg-yellow-100 text-yellow-800 border-yellow-200";
-  }
-  if (s === "failed") {
-    return "bg-red-100 text-red-800 border-red-200";
-  }
-  if (s === "refunded") {
-    return "bg-gray-100 text-gray-800 border-gray-200";
-  }
+  if (s === "paid") return "bg-green-100 text-green-800 border-green-200";
+  if (s === "pending") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  if (s === "failed") return "bg-red-100 text-red-800 border-red-200";
+  if (s === "refunded") return "bg-gray-100 text-gray-800 border-gray-200";
+
   return "bg-slate-100 text-slate-800 border-slate-200";
 }
 
+function formatDate(value: unknown) {
+  // value gali būti Date arba string (jei JSON serialize)
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("lt-LT", {
+    dateStyle: "short",
+    timeStyle: "medium",
+  }).format(d);
+}
+
 export default async function AdminOrdersPage() {
-  const orders = await prisma.order.findMany({
+  const ordersRaw = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: { items: true },
   });
+
+  // Padarom plain objects, kad Next/Vercel RSC niekur nelūžtų
+  const orders: Array<{
+    id: string;
+    stripeSessionId: string | null;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    totalCents: number;
+    currency: string;
+    paymentStatus: string;
+    createdAt: string;
+    items: Array<{ id: string; name: string; quantity: number }>;
+  }> = JSON.parse(JSON.stringify(ordersRaw));
 
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-10">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold">Admin – Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Total orders: {orders.length}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Total orders: {orders.length}</p>
         </div>
 
-        <div className="text-sm text-gray-500">
-          {/* vieta ateityje filtrams/search */}
-        </div>
+        <div className="text-sm text-gray-500">{/* vieta ateityje filtrams/search */}</div>
       </div>
 
       <div className="overflow-x-auto border rounded-2xl shadow-sm bg-white">
@@ -69,14 +82,14 @@ export default async function AdminOrdersPage() {
 
           <tbody>
             {orders.map((order) => {
-              const itemsCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
+              const itemsCount = order.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
 
               return (
                 <tr key={order.id} className="border-b last:border-b-0">
                   <td className="p-4">
                     <div className="font-medium">{shortId(order.id)}</div>
                     <div className="text-xs text-gray-500">
-                      session: {order.stripeSessionId ? shortId(order.stripeSessionId) : "—"}
+                      session: {shortId(order.stripeSessionId)}
                     </div>
                   </td>
 
@@ -108,9 +121,7 @@ export default async function AdminOrdersPage() {
                     </span>
                   </td>
 
-                  <td className="p-4 text-gray-700">
-                    {new Date(order.createdAt).toLocaleString()}
-                  </td>
+                  <td className="p-4 text-gray-700">{formatDate(order.createdAt)}</td>
 
                   <td className="p-4 text-right">
                     <Link
