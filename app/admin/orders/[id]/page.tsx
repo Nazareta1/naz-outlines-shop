@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import StatusForm from "./StatusForm";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +13,13 @@ function statusBadge(status: string) {
   const s = (status || "").toLowerCase();
 
   if (s === "paid") return "bg-green-100 text-green-800 border-green-200";
+  if (s === "fulfilled") return "bg-blue-100 text-blue-800 border-blue-200";
+  if (s === "shipped") return "bg-purple-100 text-purple-800 border-purple-200";
+  if (s === "refunded") return "bg-gray-100 text-gray-800 border-gray-200";
+
+  // jei dar yra senų statusų DB
   if (s === "pending") return "bg-yellow-100 text-yellow-800 border-yellow-200";
   if (s === "failed") return "bg-red-100 text-red-800 border-red-200";
-  if (s === "refunded") return "bg-gray-100 text-gray-800 border-gray-200";
 
   return "bg-slate-100 text-slate-800 border-slate-200";
 }
@@ -70,13 +75,18 @@ export default async function AdminOrderDetailPage({
           ← Back
         </Link>
 
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
-            order.paymentStatus
-          )}`}
-        >
-          {order.paymentStatus}
-        </span>
+        {/* ✅ Badge + Status dropdown */}
+        <div className="flex items-center gap-3">
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
+              order.paymentStatus
+            )}`}
+          >
+            {order.paymentStatus}
+          </span>
+
+          <StatusForm orderId={order.id} initialStatus={order.paymentStatus} />
+        </div>
       </div>
 
       <div className="border rounded-2xl shadow-sm bg-white p-6 mb-6">
@@ -89,9 +99,18 @@ export default async function AdminOrderDetailPage({
           <div>
             <h2 className="text-lg font-semibold mb-2">Customer</h2>
             <div className="text-sm text-gray-700 space-y-1">
-              <div><span className="text-gray-500">Name:</span> {order.name || "—"}</div>
-              <div><span className="text-gray-500">Email:</span> {order.email || "—"}</div>
-              <div><span className="text-gray-500">Phone:</span> {order.phone || "—"}</div>
+              <div>
+                <span className="text-gray-500">Name:</span>{" "}
+                {order.name || "—"}
+              </div>
+              <div>
+                <span className="text-gray-500">Email:</span>{" "}
+                {order.email || "—"}
+              </div>
+              <div>
+                <span className="text-gray-500">Phone:</span>{" "}
+                {order.phone || "—"}
+              </div>
             </div>
 
             <h2 className="text-lg font-semibold mt-6 mb-2">Shipping address</h2>
