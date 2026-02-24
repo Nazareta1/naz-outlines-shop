@@ -17,55 +17,42 @@ model Product {
   active      Boolean     @default(true)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-
   items       OrderItem[]
 }
 
 model Order {
   id              String      @id @default(cuid())
-
-  // Stripe
+  createdAt       DateTime    @default(now())
   stripeSessionId String?     @unique
-  stripePaymentId String?     @unique
-  paymentStatus   String      @default("pending") // pending|paid|failed|refunded
-
-  // Customer/shipping
   email           String?
-  name            String?
-  phone           String?
-
   addressLine1    String?
   addressLine2    String?
   city            String?
-  region          String?
-  postalCode      String?
   country         String?
-
-  // Totals
   currency        String      @default("EUR")
-  subtotalCents   Int         @default(0)
+  name            String?
+  paymentStatus   String      @default("pending")
+  phone           String?
+  postalCode      String?
+  region          String?
   shippingCents   Int         @default(0)
+  stripePaymentId String?     @unique
+  subtotalCents   Int         @default(0)
   totalCents      Int         @default(0)
-
-  createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-
   items           OrderItem[]
 }
 
 model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  productId   String
-
-  name        String
-  priceCents  Int
-  quantity    Int
-
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id])
-
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  orderId    String
+  productId  String
+  name       String
+  priceCents Int
+  quantity   Int
+  createdAt  DateTime @default(now())
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@index([productId])
