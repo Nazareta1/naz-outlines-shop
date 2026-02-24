@@ -31,8 +31,7 @@ async function listAllLineItems(sessionId: string) {
       await stripe.checkout.sessions.listLineItems(sessionId, {
         limit: 100,
         starting_after,
-        // expand product kad fallback atveju būtų metadata (bet pagrindas yra price.metadata)
-        expand: ["data.price.product"],
+        expand: ["data.price.product"], // kad fallback turėtų product metadata
       });
 
     all.push(...page.data);
@@ -59,7 +58,7 @@ export async function POST(req: Request) {
     const body = await req.text(); // IMPORTANT: raw body
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    return new Response(`Webhook Error: ${err?.message ?? "Invalid signature"}`, { status: 400 });
   }
 
   try {
@@ -67,7 +66,7 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // 1) Retrieve session + customer_details for address/phone/email
+        // 1) retrieve session (customer_details for address/phone/email)
         const full = await stripe.checkout.sessions.retrieve(session.id, {
           expand: ["customer_details"],
         });
@@ -88,7 +87,7 @@ export async function POST(req: Request) {
         const subtotalCents = full.amount_subtotal ?? 0;
         const shippingCents = full.total_details?.amount_shipping ?? 0;
 
-        // 2) Upsert Order (idempotent)
+        // 2) upsert Order (idempotent)
         const order = await prisma.order.upsert({
           where: { stripeSessionId },
           update: {
@@ -134,19 +133,20 @@ export async function POST(req: Request) {
           },
         });
 
-        // 3) Get Line Items (reliable)
+        // 3) line items (reliable)
         const lineItems = await listAllLineItems(stripeSessionId);
 
-        // 4) Idempotency for items: delete then recreate
+        // 4) idempotency for items
         await prisma.orderItem.deleteMany({ where: { orderId: order.id } });
 
-        const createItems = lineItems.map((li) => {
+        // 5) create items (WITH Product upsert to avoid FK crash)
+        for (const li of lineItems) {
           const price = li.price;
 
-          // ✅ PAGRINDAS: productId iš PRICE metadata (nes price_data.metadata mes įrašom checkout'e)
+          // ✅ pagrindas: productId iš PRICE metadata (checkout route turi tai uždėti)
           const fromPrice = price?.metadata?.productId;
 
-          // Fallback: jei kažkada naudosi Stripe katalogo produktus su metadata
+          // fallback: jei kažkada naudosi Stripe katalogo Product metadata
           const fromProduct = getInternalProductIdFromProduct(price?.product);
 
           const internalProductId = fromPrice || fromProduct;
@@ -155,21 +155,40 @@ export async function POST(req: Request) {
             throw new Error(
               `Missing productId mapping. ` +
                 `Expected price.metadata.productId (recommended) or product.metadata.productId. ` +
-                `(session=${stripeSessionId})`
+                `Session=${stripeSessionId}`
             );
           }
 
-          return {
-            orderId: order.id,
-            productId: internalProductId,
-            name: li.description ?? "Item",
-            priceCents: price?.unit_amount ?? 0,
-            quantity: li.quantity ?? 1,
-          };
-        });
+          // ✅ Svarbiausia: užtikrinam, kad Product egzistuoja DB (kitaip FK nulaužia webhooką)
+          await prisma.product.upsert({
+            where: { id: internalProductId },
+            update: {
+              // galim atnaujinti kainą/pavadinimą, jei nori – palieku minimaliai
+              name: li.description ?? "Item",
+              priceCents: price?.unit_amount ?? 0,
+              currency,
+              active: true,
+            },
+            create: {
+              id: internalProductId,
+              name: li.description ?? "Item",
+              description: null,
+              priceCents: price?.unit_amount ?? 0,
+              currency,
+              imageUrl: null,
+              active: true,
+            },
+          });
 
-        if (createItems.length) {
-          await prisma.orderItem.createMany({ data: createItems });
+          await prisma.orderItem.create({
+            data: {
+              orderId: order.id,
+              productId: internalProductId,
+              name: li.description ?? "Item",
+              priceCents: price?.unit_amount ?? 0,
+              quantity: li.quantity ?? 1,
+            },
+          });
         }
 
         break;
@@ -191,8 +210,11 @@ export async function POST(req: Request) {
     }
 
     return new Response("OK", { status: 200 });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Webhook handler failed:", err);
-    return new Response("Webhook handler failed", { status: 500 });
+    // ✅ GRĄŽINAM tikrą klaidos tekstą, kad Stripe dashboard’e matytum kodėl 500
+    return new Response(`Webhook handler failed: ${err?.message ?? "Unknown error"}`, {
+      status: 500,
+    });
   }
 }
