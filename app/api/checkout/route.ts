@@ -11,21 +11,20 @@ if (!stripeSecretKey) {
 const stripe = new Stripe(stripeSecretKey);
 
 type CheckoutItem = {
-  id: string;      // tavo DB Product.id
+  id: string;       // tavo DB Product.id
   name: string;
-  price: number;   // EUR
+  price: number;    // EUR
   quantity: number;
 };
 
 function getOrigin(req: Request) {
-  // 1) Prefer env (production)
   const envOrigin = process.env.NEXT_PUBLIC_SITE_URL;
   if (envOrigin) return envOrigin.replace(/\/$/, "");
 
-  // 2) Fallback from request headers (preview/dev)
   const proto = req.headers.get("x-forwarded-proto") ?? "https";
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
   if (!host) return null;
+
   return `${proto}://${host}`;
 }
 
@@ -70,7 +69,6 @@ export async function POST(req: Request) {
       billing_address_collection: "required",
       allow_promotion_codes: true,
 
-      // kad Stripe įraše matytum šaltinį
       metadata: {
         source: "naz-outlines-shop",
       },
@@ -80,14 +78,12 @@ export async function POST(req: Request) {
         price_data: {
           currency: "eur",
           unit_amount: Math.round(it.price * 100),
-
-          // ✅ SVARBIAUSIA: productId įrašom į PRICE metadata
-          metadata: { productId: it.id },
-
-          // Optional: paliekam ir product metadata (nebūtina, bet ok)
           product_data: {
             name: it.name,
-            metadata: { productId: it.id },
+            // ✅ TEISINGA vieta metadata: product_data.metadata
+            metadata: {
+              productId: it.id, // tavo DB Product.id
+            },
           },
         },
       })),

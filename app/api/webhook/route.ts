@@ -11,14 +11,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
  * Stripe price.product can be:
  * - string (product id) if not expanded
  * - Stripe.Product (has metadata)
- * - Stripe.DeletedProduct (has deleted: true, no metadata)
+ * - Stripe.DeletedProduct (no metadata)
  */
-function getInternalProductIdFromProduct(
+function getInternalProductId(
   product: Stripe.Product | Stripe.DeletedProduct | string | null | undefined
 ): string | undefined {
   if (!product) return undefined;
   if (typeof product === "string") return undefined;
-  if ("deleted" in product) return undefined; // DeletedProduct
+  if ("deleted" in product) return undefined;
   return product.metadata?.productId || undefined;
 }
 
@@ -31,7 +31,8 @@ async function listAllLineItems(sessionId: string) {
       await stripe.checkout.sessions.listLineItems(sessionId, {
         limit: 100,
         starting_after,
-        expand: ["data.price.product"], // kad fallback turėtų product metadata
+        // ✅ expand product, kad galėtume paimti product.metadata.productId
+        expand: ["data.price.product"],
       });
 
     all.push(...page.data);
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
-    const body = await req.text(); // IMPORTANT: raw body
+    const body = await req.text(); // raw body is required
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
     return new Response(`Webhook Error: ${err?.message ?? "Invalid signature"}`, { status: 400 });
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // 1) retrieve session (customer_details for address/phone/email)
+        // 1) session details for address/phone/email
         const full = await stripe.checkout.sessions.retrieve(session.id, {
           expand: ["customer_details"],
         });
@@ -133,37 +134,29 @@ export async function POST(req: Request) {
           },
         });
 
-        // 3) line items (reliable)
+        // 3) line items
         const lineItems = await listAllLineItems(stripeSessionId);
 
         // 4) idempotency for items
         await prisma.orderItem.deleteMany({ where: { orderId: order.id } });
 
-        // 5) create items (WITH Product upsert to avoid FK crash)
+        // 5) create items (ensure Product exists to avoid FK crash)
         for (const li of lineItems) {
           const price = li.price;
-
-          // ✅ pagrindas: productId iš PRICE metadata (checkout route turi tai uždėti)
-          const fromPrice = price?.metadata?.productId;
-
-          // fallback: jei kažkada naudosi Stripe katalogo Product metadata
-          const fromProduct = getInternalProductIdFromProduct(price?.product);
-
-          const internalProductId = fromPrice || fromProduct;
+          const internalProductId = getInternalProductId(price?.product);
 
           if (!internalProductId) {
             throw new Error(
-              `Missing productId mapping. ` +
-                `Expected price.metadata.productId (recommended) or product.metadata.productId. ` +
-                `Session=${stripeSessionId}`
+              `Missing product mapping: expected price.product.metadata.productId. ` +
+                `Make sure checkout creates product_data.metadata.productId. ` +
+                `(session=${stripeSessionId})`
             );
           }
 
-          // ✅ Svarbiausia: užtikrinam, kad Product egzistuoja DB (kitaip FK nulaužia webhooką)
+          // ensure Product exists (FK safety)
           await prisma.product.upsert({
             where: { id: internalProductId },
             update: {
-              // galim atnaujinti kainą/pavadinimą, jei nori – palieku minimaliai
               name: li.description ?? "Item",
               priceCents: price?.unit_amount ?? 0,
               currency,
@@ -212,7 +205,6 @@ export async function POST(req: Request) {
     return new Response("OK", { status: 200 });
   } catch (err: any) {
     console.error("Webhook handler failed:", err);
-    // ✅ GRĄŽINAM tikrą klaidos tekstą, kad Stripe dashboard’e matytum kodėl 500
     return new Response(`Webhook handler failed: ${err?.message ?? "Unknown error"}`, {
       status: 500,
     });
