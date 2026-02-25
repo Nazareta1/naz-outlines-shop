@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import StatusForm from "./StatusForm";
+import ShippingForm from "./ShippingForm";
 
-export const runtime = "nodejs"; // ✅ PRISMAI būtina Node runtime
+export const runtime = "nodejs"; // ✅ Prisma needs Node runtime on Vercel
 export const dynamic = "force-dynamic";
 
 function formatMoney(cents: number, currency: string) {
@@ -121,6 +122,7 @@ export default async function AdminOrderDetailPage({
           </div>
         </div>
 
+        {/* Main card */}
         <div className="border rounded-2xl shadow-sm bg-white p-6 mb-6">
           <h1 className="text-2xl font-bold mb-2">Order {order.id}</h1>
           <div className="text-sm text-gray-600">
@@ -199,6 +201,17 @@ export default async function AdminOrderDetailPage({
           </div>
         </div>
 
+        {/* ✅ Shipping tracking form */}
+        <div className="mb-6">
+          <ShippingForm
+            orderId={order.id}
+            initialCarrier={(order as any).shippingCarrier}
+            initialTracking={(order as any).trackingNumber}
+            initialFulfillmentStatus={order.fulfillmentStatus}
+          />
+        </div>
+
+        {/* Items table */}
         <div className="border rounded-2xl shadow-sm bg-white p-6">
           <h2 className="text-xl font-bold mb-4">Items</h2>
 
