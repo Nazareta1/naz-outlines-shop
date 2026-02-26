@@ -49,6 +49,9 @@ model Order {
   updatedAt         DateTime    @updatedAt
 
   items             OrderItem[]
+  confirmationEmailSentAt DateTime?
+adminEmailSentAt        DateTime?
+lastStripeEventId       String?   @unique
 }
 
 model OrderItem {
