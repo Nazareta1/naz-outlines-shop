@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { resend, EMAIL_FROM, ADMIN_EMAIL } from "@/lib/resend";
-import { buildOrderEmail } from "@/lib/emails/orderConfirmation";
+import { orderConfirmationEmail } from "@/lib/emails/orderConfirmation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
 
       // 💎 SEND LUXURY EMAIL
       if (!order.confirmationEmailSentAt && order.email) {
-        const email = buildOrderEmail({
+        const email = orderConfirmationEmail({
           orderId: order.id,
           createdAt: order.createdAt,
           currency,
