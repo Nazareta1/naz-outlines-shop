@@ -1,189 +1,206 @@
 import Stripe from "stripe";
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resend, EMAIL_FROM, ADMIN_EMAIL } from "@/lib/resend";
-import { orderConfirmationEmail } from "@/lib/emails/orderConfirmation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
-function getInternalProductId(
-  product: Stripe.Product | Stripe.DeletedProduct | string | null | undefined
-): string | undefined {
-  if (!product) return undefined;
-  if (typeof product === "string") return undefined;
-  if ("deleted" in product) return undefined;
-  return product.metadata?.productId || undefined;
-}
+const stripe = new Stripe(stripeSecretKey, {
+  // jei pas tave jau nustatyta kitur – ok. Šita versija saugi palikti.
 
-async function listAllLineItems(sessionId: string) {
-  const all: Stripe.LineItem[] = [];
-  let starting_after: string | undefined;
+});
 
-  while (true) {
-    const page = await stripe.checkout.sessions.listLineItems(sessionId, {
-      limit: 100,
-      starting_after,
-      expand: ["data.price.product"],
-    });
-
-    all.push(...page.data);
-    if (!page.has_more) break;
-
-    starting_after = page.data[page.data.length - 1]?.id;
-    if (!starting_after) break;
-  }
-
-  return all;
+function toCents(n: number | null | undefined) {
+  return typeof n === "number" ? n : 0;
 }
 
 export async function POST(req: Request) {
   const sig = (await headers()).get("stripe-signature");
-  if (!sig) return new Response("Missing stripe-signature", { status: 400 });
+  if (!sig) {
+    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
+  }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!webhookSecret)
-    return new Response("Missing STRIPE_WEBHOOK_SECRET", { status: 500 });
+  if (!webhookSecret) {
+    return NextResponse.json({ error: "Missing STRIPE_WEBHOOK_SECRET" }, { status: 500 });
+  }
 
   let event: Stripe.Event;
 
   try {
-    const body = await req.text();
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+    const rawBody = await req.text(); // ✅ raw body required for signature verification
+    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err: any) {
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    console.error("Webhook signature verification failed:", err?.message);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  // ✅ idempotency guard by event id (you have lastStripeEventId unique)
+  try {
+    const already = await prisma.order.findFirst({
+      where: { lastStripeEventId: event.id },
+      select: { id: true },
+    });
+    if (already) return NextResponse.json({ ok: true, deduped: true });
+  } catch {
+    // if lookup fails, continue (we'll still try to process)
   }
 
   try {
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+    switch (event.type) {
+      /**
+       * Primary event: payment done and checkout completed
+       */
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object as Stripe.Checkout.Session;
 
-      const stripeSessionId = session.id;
+        if (!session.id) {
+          return NextResponse.json({ error: "Missing session.id" }, { status: 400 });
+        }
 
-      // 🔐 Idempotency per event ID
-      const existingByEvent = await prisma.order.findFirst({
-        where: { lastStripeEventId: event.id },
-      });
+        // Fetch full session with line items + product metadata
+        const full = await stripe.checkout.sessions.retrieve(session.id, {
+          expand: [
+            "line_items.data.price.product",
+            "payment_intent",
+            "customer_details",
+          ],
+        });
 
-      if (existingByEvent) {
-        return new Response("Already processed", { status: 200 });
+        const customer = full.customer_details;
+        const address = customer?.address ?? null;
+
+        const currency = (full.currency ?? "eur").toUpperCase();
+
+        const amountSubtotal = toCents(full.amount_subtotal); // cents
+        const amountTotal = toCents(full.amount_total); // cents
+        const shippingCents = toCents(full.total_details?.amount_shipping);
+
+        const stripePaymentId =
+          typeof full.payment_intent === "string"
+            ? full.payment_intent
+            : full.payment_intent?.id ?? null;
+
+        // Build order items from Stripe line items
+        const lineItems = full.line_items?.data ?? [];
+
+        // Create/Update order by stripeSessionId (unique)
+        const order = await prisma.order.upsert({
+          where: { stripeSessionId: full.id },
+          update: {
+            email: customer?.email ?? null,
+            name: customer?.name ?? null,
+            phone: customer?.phone ?? null,
+
+            addressLine1: address?.line1 ?? null,
+            addressLine2: address?.line2 ?? null,
+            city: address?.city ?? null,
+            region: address?.state ?? null,
+            postalCode: address?.postal_code ?? null,
+            country: address?.country ?? null,
+
+            currency,
+            shippingCents,
+            subtotalCents: amountSubtotal,
+            totalCents: amountTotal,
+
+            paymentStatus: "paid",
+            fulfillmentStatus: "unfulfilled",
+
+            stripePaymentId: stripePaymentId ?? undefined,
+            lastStripeEventId: event.id,
+          },
+          create: {
+            stripeSessionId: full.id,
+            stripePaymentId: stripePaymentId ?? null,
+            lastStripeEventId: event.id,
+
+            email: customer?.email ?? null,
+            name: customer?.name ?? null,
+            phone: customer?.phone ?? null,
+
+            addressLine1: address?.line1 ?? null,
+            addressLine2: address?.line2 ?? null,
+            city: address?.city ?? null,
+            region: address?.state ?? null,
+            postalCode: address?.postal_code ?? null,
+            country: address?.country ?? null,
+
+            currency,
+            shippingCents,
+            subtotalCents: amountSubtotal,
+            totalCents: amountTotal,
+
+            paymentStatus: "paid",
+            fulfillmentStatus: "unfulfilled",
+          },
+          select: { id: true },
+        });
+
+        // Replace items (safe idempotent strategy)
+        await prisma.orderItem.deleteMany({
+          where: { orderId: order.id },
+        });
+
+        // Create items based on Stripe line items
+        const createItems = lineItems.map((li) => {
+          const qty = li.quantity ?? 1;
+          const unitAmount = toCents(li.price?.unit_amount);
+
+          // productId comes from Stripe Product metadata (created from price_data.product_data)
+          const stripeProduct = li.price?.product as Stripe.Product | null;
+          const productIdFromMetadata =
+            (stripeProduct?.metadata?.productId as string | undefined) ?? undefined;
+
+          return prisma.orderItem.create({
+            data: {
+              orderId: order.id,
+              productId: productIdFromMetadata ?? "unknown", // fallback (should not happen)
+              name: li.description ?? stripeProduct?.name ?? "Item",
+              priceCents: unitAmount,
+              quantity: qty,
+            },
+          });
+        });
+
+        // Run creates in transaction
+        await prisma.$transaction(createItems);
+
+        return NextResponse.json({ ok: true });
       }
 
-      const full = await stripe.checkout.sessions.retrieve(stripeSessionId, {
-        expand: ["customer_details"],
-      });
+      /**
+       * Optional: mark failed payment
+       */
+      case "checkout.session.async_payment_failed": {
+        const session = event.data.object as Stripe.Checkout.Session;
 
-      const cd = full.customer_details;
-      const addr = cd?.address;
+        if (!session?.id) return NextResponse.json({ ok: true });
 
-      const stripePaymentId =
-        typeof full.payment_intent === "string"
-          ? full.payment_intent
-          : full.payment_intent?.id ?? null;
-
-      const currency = (full.currency ?? "eur").toUpperCase();
-      const totalCents = full.amount_total ?? 0;
-      const subtotalCents = full.amount_subtotal ?? 0;
-      const shippingCents = full.total_details?.amount_shipping ?? 0;
-
-      const order = await prisma.order.upsert({
-        where: { stripeSessionId },
-        update: {
-          stripePaymentId,
-          paymentStatus: "paid",
-          lastStripeEventId: event.id,
-        },
-        create: {
-          stripeSessionId,
-          stripePaymentId,
-          paymentStatus: "paid",
-          fulfillmentStatus: "unfulfilled",
-          lastStripeEventId: event.id,
-
-          email: cd?.email ?? null,
-          name: cd?.name ?? null,
-          phone: cd?.phone ?? null,
-
-          addressLine1: addr?.line1 ?? null,
-          addressLine2: addr?.line2 ?? null,
-          city: addr?.city ?? null,
-          region: addr?.state ?? null,
-          postalCode: addr?.postal_code ?? null,
-          country: addr?.country ?? null,
-
-          currency,
-          subtotalCents,
-          shippingCents,
-          totalCents,
-        },
-      });
-
-      const lineItems = await listAllLineItems(stripeSessionId);
-
-      await prisma.orderItem.deleteMany({ where: { orderId: order.id } });
-
-      for (const li of lineItems) {
-        const price = li.price;
-        const internalProductId = getInternalProductId(price?.product);
-        if (!internalProductId) continue;
-
-        await prisma.orderItem.create({
+        await prisma.order.updateMany({
+          where: { stripeSessionId: session.id },
           data: {
-            orderId: order.id,
-            productId: internalProductId,
-            name: li.description ?? "Item",
-            priceCents: price?.unit_amount ?? 0,
-            quantity: li.quantity ?? 1,
+            paymentStatus: "failed",
+            lastStripeEventId: event.id,
           },
         });
+
+        return NextResponse.json({ ok: true });
       }
 
-      // 💎 SEND LUXURY EMAIL
-      if (!order.confirmationEmailSentAt && order.email) {
-        const email = orderConfirmationEmail({
-          orderId: order.id,
-          createdAt: order.createdAt,
-          currency,
-          items: lineItems.map((li) => ({
-            name: li.description ?? "Item",
-            quantity: li.quantity ?? 1,
-            priceCents: li.price?.unit_amount ?? 0,
-          })),
-          subtotalCents,
-          shippingCents,
-          totalCents,
-          customerName: order.name,
-        });
-
-        await resend.emails.send({
-          from: EMAIL_FROM,
-          to: order.email,
-          subject: email.subject,
-          html: email.html,
-        });
-
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { confirmationEmailSentAt: new Date() },
-        });
-      }
-
-      // Admin notification
-      if (ADMIN_EMAIL) {
-        await resend.emails.send({
-          from: EMAIL_FROM,
-          to: ADMIN_EMAIL,
-          subject: `New Order — ${order.id}`,
-          html: `<strong>New paid order:</strong> ${order.id}`,
-        });
+      default: {
+        // For other events: acknowledge (Stripe requires 2xx)
+        return NextResponse.json({ ok: true, ignored: true });
       }
     }
-
-    return new Response("OK", { status: 200 });
   } catch (err: any) {
-    console.error("Webhook error:", err);
-    return new Response("Webhook handler failed", { status: 500 });
+    console.error("Webhook handler error:", err);
+    // still return 200 sometimes? No—better return 500 so Stripe retries.
+    return NextResponse.json({ error: err?.message ?? "Webhook error" }, { status: 500 });
   }
 }

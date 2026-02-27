@@ -1,110 +1,65 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useCart } from "@/app/cart/context";
-
-type OrderItem = {
-  id: string;
-  name: string;
-  priceCents: number;
-  quantity: number;
-};
-
-type Order = {
-  id: string;
-  totalCents: number;
-  currency: string;
-  name?: string;
-  email?: string;
-  addressLine1?: string;
-  city?: string;
-  postalCode?: string;
-  country?: string;
-  items: OrderItem[];
-};
+import Link from "next/link";
 
 export default function SuccessContent() {
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get("session_id");
-
-  const { clearCart } = useCart();
-
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!sessionId) return;
-
-    async function fetchOrder() {
-      const res = await fetch(
-        `/api/orders/by-session?session_id=${sessionId}`
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        setOrder(data);
-        clearCart();
-      }
-
-      setLoading(false);
-    }
-
-    fetchOrder();
-  }, [sessionId, clearCart]);
-
-  if (loading) {
-    return <div className="p-10 text-center">Loading your order...</div>;
-  }
-
-  if (!order) {
-    return (
-      <div className="p-10 text-center">
-        Order not found.
-      </div>
-    );
-  }
+  const search = useSearchParams();
+  const sessionId = search.get("session_id");
 
   return (
-    <div className="max-w-2xl mx-auto p-10">
-      <h1 className="text-3xl font-bold mb-6">
-        🎉 Payment successful!
-      </h1>
+    <section className="mx-auto max-w-6xl px-6 pt-12 pb-24">
+      <div className="border-b border-white/10 pb-10">
+        <div className="text-xs tracking-[0.35em] uppercase text-white/45">
+          Checkout
+        </div>
+        <h1 className="mt-4 text-4xl md:text-5xl font-semibold tracking-[-0.02em] leading-[1.05]">
+          Order confirmed
+        </h1>
+        <div className="mt-4 text-sm text-white/55">
+          Payment received. Confirmation is being processed.
+        </div>
+      </div>
 
-      <p className="mb-4">
-        Order ID: <strong>{order.id}</strong>
-      </p>
+      <div className="mt-12 border border-white/10 bg-[#141416] rounded-[28px] p-10">
+        <div className="text-xs tracking-[0.35em] uppercase text-white/45">
+          Details
+        </div>
 
-      <h2 className="text-xl font-semibold mb-2">Items:</h2>
+        <div className="mt-4 text-white/65 leading-relaxed">
+          You will receive an email confirmation shortly.
+        </div>
 
-      <div className="space-y-2 mb-6">
-        {order.items.map((item) => (
-          <div
-            key={item.id}
-            className="flex justify-between border-b pb-2"
-          >
-            <span>
-              {item.name} × {item.quantity}
-            </span>
-            <span>
-              {(item.priceCents * item.quantity / 100).toFixed(2)} €
-            </span>
+        {sessionId ? (
+          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="text-[11px] tracking-[0.28em] uppercase text-white/45">
+              Session
+            </div>
+            <div className="mt-2 text-sm text-white/70 break-all">
+              {sessionId}
+            </div>
           </div>
-        ))}
+        ) : null}
+
+        <div className="mt-10 flex gap-3">
+          <Link
+            href="/products"
+            className="inline-flex items-center justify-center border border-white/15 bg-white/5 px-7 py-3 text-xs tracking-[0.28em] uppercase text-white/80 hover:bg-white/10 hover:text-white transition"
+          >
+            Explore
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center border border-white/10 bg-transparent px-7 py-3 text-xs tracking-[0.28em] uppercase text-white/60 hover:text-white/85 transition"
+          >
+            Home
+          </Link>
+        </div>
       </div>
 
-      <div className="text-lg font-semibold mb-6">
-        Total: {(order.totalCents / 100).toFixed(2)} €
+      <div className="mt-10 text-[11px] tracking-[0.28em] uppercase text-white/40">
+        Built on structure. Engineered for presence.
       </div>
-
-      <div className="text-sm text-gray-600">
-        <p>{order.name}</p>
-        <p>{order.addressLine1}</p>
-        <p>
-          {order.postalCode} {order.city}
-        </p>
-        <p>{order.country}</p>
-      </div>
-    </div>
+    </section>
   );
 }
