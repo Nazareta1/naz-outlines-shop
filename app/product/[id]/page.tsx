@@ -1,15 +1,17 @@
+// app/product/[id]/page.tsx
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import Navbar from "@/components/Navbar";
 import AddToCartButton from "./AddToCartButton";
 
-export const runtime = "nodejs"; // Prisma on Vercel
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function formatMoney(cents: number, currency: string) {
   const amount = (cents / 100).toFixed(2);
   const cur = (currency || "EUR").toUpperCase();
-  return cur === "EUR" ? `${amount} €` : `${amount} ${cur}`;
+  return cur === "EUR" ? `€${amount}` : `${amount} ${cur}`;
 }
 
 export default async function ProductPage({
@@ -25,24 +27,23 @@ export default async function ProductPage({
 
   if (!product || !product.active) {
     return (
-      <main className="min-h-screen bg-[#07070A] text-white">
+      <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
+        <Navbar />
         <div className="mx-auto max-w-6xl px-6 py-16">
           <Link
             href="/products"
-            className="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/85 hover:bg-white/10 transition"
+            className="text-[11px] tracking-[0.28em] uppercase text-white/70 hover:text-white transition"
           >
-            ← Back to shop
+            ← Back
           </Link>
-
-          <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
-            <div className="text-xs tracking-[0.25em] text-white/60">
-              PRODUCT
+          <div className="mt-10 border border-white/10 bg-[#141416] rounded-[28px] p-10">
+            <div className="text-xs tracking-[0.35em] uppercase text-white/45">
+              Product
             </div>
-            <h1 className="mt-3 text-3xl font-semibold">Not found</h1>
-            <p className="mt-3 text-white/70">
+            <h1 className="mt-4 text-3xl font-semibold">Not found</h1>
+            <p className="mt-3 text-white/55">
               This product doesn’t exist or is not active.
             </p>
-            <div className="mt-6 text-xs text-white/50">ID: {id}</div>
           </div>
         </div>
       </main>
@@ -50,139 +51,81 @@ export default async function ProductPage({
   }
 
   const img = product.imageUrl || "/logo.png";
-  const price = formatMoney(product.priceCents, product.currency);
 
   return (
-    <main className="min-h-screen bg-[#07070A] text-white overflow-hidden">
-      {/* Ambient background (same vibe as homepage) */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute top-24 left-20 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute top-56 right-24 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.10),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06),transparent_28%,rgba(0,0,0,0.65))]" />
-      </div>
+    <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
+      <Navbar />
 
-      {/* NAV */}
-      <header className="relative z-10 mx-auto max-w-6xl px-6 pt-8">
-        <nav className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
-          <Link href="/" className="group inline-flex items-center gap-2">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/10">
-              <span className="text-xs tracking-[0.3em] pl-1 opacity-90">
-                NO
-              </span>
-            </span>
-            <span className="text-sm font-semibold tracking-[0.18em]">
-              NAZ OUTLINES
-            </span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-6 text-sm text-white/80">
-            <Link href="/#about" className="hover:text-white transition">
-              About
-            </Link>
-            <Link href="/#streetwear" className="hover:text-white transition">
-              Streetwear
-            </Link>
-            <Link href="/#fabric" className="hover:text-white transition">
-              Quality
-            </Link>
-            <Link href="/#faq" className="hover:text-white transition">
-              FAQ
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/products"
-              className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/15 transition"
-            >
-              Shop
-            </Link>
-            <Link
-              href="/cart"
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90 transition"
-            >
-              Cart
-            </Link>
-          </div>
-        </nav>
-      </header>
-
-      {/* CONTENT */}
-      <section className="relative z-10 mx-auto max-w-6xl px-6 pt-10 pb-20">
-        <div className="mb-6">
+      <section className="mx-auto max-w-6xl px-6 pt-10 pb-24">
+        <div className="mb-8">
           <Link
             href="/products"
-            className="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/85 hover:bg-white/10 transition"
+            className="text-[11px] tracking-[0.28em] uppercase text-white/70 hover:text-white transition"
           >
             ← Back to shop
           </Link>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-12">
-          {/* Left: image */}
+        <div className="grid gap-10 lg:grid-cols-12 items-start">
+          {/* LEFT: IMAGE */}
           <div className="lg:col-span-7">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-                <div className="aspect-[4/3] w-full">
-                  <Image
-                    src={img}
-                    alt={product.name}
-                    fill
-                    className="object-contain p-10 opacity-95"
-                    sizes="(max-width: 1024px) 95vw, 55vw"
-                  />
-                </div>
-
-                <div className="absolute left-4 top-4 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[10px] tracking-[0.25em] text-white/70">
-                  HOODIE
-                </div>
+            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#141416]">
+              <div className="relative aspect-[4/5] w-full">
+                <Image
+                  src={img}
+                  alt={product.name}
+                  fill
+                  className="object-contain p-10 opacity-95"
+                  sizes="(max-width: 1024px) 95vw, 55vw"
+                  priority
+                />
               </div>
+            </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Pill label="Heavyweight 400–420 GSM" />
-                <Pill label="80% cotton / 20% polyester" />
-                <Pill label="Loopback French Terry" />
-              </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <DetailPill label="480 GSM Heavy French Terry" />
+              <DetailPill label="Engineered asymmetrical cut" />
+              <DetailPill label="Limited production" />
+              <DetailPill label="Smoke Black" />
             </div>
           </div>
 
-          {/* Right: details */}
+          {/* RIGHT: INFO */}
           <div className="lg:col-span-5">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-7 backdrop-blur-xl">
-              <div className="text-xs tracking-[0.25em] text-white/60">
-                NAZ OUTLINES • PREMIUM STREETWEAR
+            <div className="border border-white/10 bg-[#141416] rounded-[28px] p-8">
+              <div className="text-xs tracking-[0.35em] uppercase text-white/45">
+                NAZ
               </div>
 
-              <h1 className="mt-4 text-3xl md:text-4xl font-semibold leading-[1.1] tracking-[-0.02em]">
+              <h1 className="mt-4 text-3xl md:text-4xl font-semibold tracking-[-0.02em] leading-[1.05]">
                 {product.name}
               </h1>
 
-              <div className="mt-3 flex items-center justify-between gap-4">
-                <div className="text-sm text-white/70">
-                  Minimal outlines. Maximum presence.
+              <div className="mt-4 flex items-baseline justify-between gap-6">
+                <div className="text-[11px] tracking-[0.28em] uppercase text-white/45">
+                  Smoke Black
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-sm font-semibold text-white/90">
-                  {price}
+                <div className="text-lg text-white/80">
+                  {formatMoney(product.priceCents, product.currency)}
                 </div>
               </div>
 
-              {product.description ? (
-                <p className="mt-5 text-sm text-white/70 leading-relaxed">
-                  {product.description}
-                </p>
-              ) : (
-                <p className="mt-5 text-sm text-white/55 leading-relaxed">
-                  Premium hoodie built for everyday wear — heavyweight feel, clean
-                  silhouette, and outline-driven design language.
-                </p>
-              )}
+              <div className="mt-6 text-sm leading-relaxed text-white/60">
+                {product.description || (
+                  <>
+                    480 GSM Heavy French Terry.
+                    <br />
+                    Engineered asymmetrical cut.
+                    <br />
+                    Limited production.
+                  </>
+                )}
+              </div>
 
-              {/* Size selector (UI) */}
-              <div className="mt-6">
-                <div className="text-xs tracking-[0.25em] text-white/60">
-                  SIZE
+              {/* SIZE UI minimal */}
+              <div className="mt-8">
+                <div className="text-[11px] tracking-[0.28em] uppercase text-white/45">
+                  Size
                 </div>
                 <div className="mt-3 grid grid-cols-4 gap-2">
                   <SizeChip label="S" />
@@ -190,13 +133,9 @@ export default async function ProductPage({
                   <SizeChip label="L" />
                   <SizeChip label="XL" />
                 </div>
-                <div className="mt-2 text-xs text-white/50">
-                  (Kol kas UI — vėliau padarysim realius variantus per DB.)
-                </div>
               </div>
 
-              {/* CTA */}
-              <div className="mt-6 grid grid-cols-1 gap-3">
+              <div className="mt-8 grid gap-3">
                 <AddToCartButton
                   product={{
                     id: product.id,
@@ -208,70 +147,34 @@ export default async function ProductPage({
                 />
                 <Link
                   href="/cart"
-                  className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
+                  className="inline-flex items-center justify-center border border-white/15 bg-white/5 px-6 py-3 text-xs tracking-[0.28em] uppercase text-white/80 hover:bg-white/10 hover:text-white transition"
                 >
-                  Go to cart →
+                  Cart
                 </Link>
               </div>
 
-              {/* Shipping / returns */}
-              <div className="mt-7 grid gap-3">
-                <InfoRow k="Shipping" v="Tracked shipping. EU-ready." />
-                <InfoRow k="Returns" v="14 days (policy page coming next)." />
-                <InfoRow k="Support" v="Email support (order updates + tracking)." />
-              </div>
-            </div>
-
-            {/* Spec block */}
-            <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-7 backdrop-blur-xl">
-              <div className="text-xs tracking-[0.25em] text-white/60">
-                FABRIC SPEC
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <SpecCard k="Composition" v="80% cotton / 20% polyester" />
-                <SpecCard k="Weight" v="400–420 GSM" />
-                <SpecCard k="Knit" v="French Terry (loopback)" />
-                <SpecCard k="Finish" v="Pre-shrunk • Enzyme washed" />
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5 text-sm text-white/70 leading-relaxed">
-                <span className="text-white/85 font-semibold">Why it matters:</span>{" "}
-                heavyweight GSM gives a premium drape and structure; pre-shrunk reduces
-                shrink risk; enzyme wash adds a softer, high-end handfeel.
+              <div className="mt-10 border-t border-white/10 pt-6 grid gap-2 text-xs text-white/45">
+                <div className="flex justify-between">
+                  <span className="tracking-[0.28em] uppercase">Shipping</span>
+                  <span className="text-white/55">Tracked EU shipping</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="tracking-[0.28em] uppercase">Returns</span>
+                  <span className="text-white/55">14 days</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="relative z-10 border-t border-white/10 bg-black/40">
-        <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <div className="text-sm font-semibold tracking-[0.18em]">
-              NAZ OUTLINES
-            </div>
-            <div className="mt-2 text-xs text-white/60">
-              © {new Date().getFullYear()} • Auto culture × Premium streetwear
-            </div>
+      <footer className="border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-6 py-10 flex items-center justify-between">
+          <div className="text-xs tracking-[0.35em] uppercase text-white/50">
+            NAZ
           </div>
-
-          <div className="flex flex-wrap gap-4 text-sm text-white/70">
-            <Link href="/#about" className="hover:text-white transition">
-              About
-            </Link>
-            <Link href="/#streetwear" className="hover:text-white transition">
-              Streetwear
-            </Link>
-            <Link href="/#fabric" className="hover:text-white transition">
-              Quality
-            </Link>
-            <Link href="/products" className="hover:text-white transition">
-              Shop
-            </Link>
-            <Link href="/cart" className="hover:text-white transition">
-              Cart
-            </Link>
+          <div className="text-xs text-white/35">
+            © {new Date().getFullYear()}
           </div>
         </div>
       </footer>
@@ -279,9 +182,9 @@ export default async function ProductPage({
   );
 }
 
-function Pill({ label }: { label: string }) {
+function DetailPill({ label }: { label: string }) {
   return (
-    <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-center text-xs text-white/75">
+    <div className="border border-white/10 bg-white/[0.03] rounded-2xl px-4 py-3 text-xs text-white/60">
       {label}
     </div>
   );
@@ -291,27 +194,9 @@ function SizeChip({ label }: { label: string }) {
   return (
     <button
       type="button"
-      className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
+      className="border border-white/10 bg-white/[0.03] rounded-2xl px-4 py-3 text-xs tracking-[0.18em] uppercase text-white/70 hover:bg-white/[0.06] hover:text-white transition"
     >
       {label}
     </button>
-  );
-}
-
-function InfoRow({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-      <div className="text-xs tracking-[0.25em] text-white/55">{k}</div>
-      <div className="text-sm text-white/80 text-right">{v}</div>
-    </div>
-  );
-}
-
-function SpecCard({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/30 p-5 hover:bg-black/40 transition">
-      <div className="text-xs tracking-[0.25em] text-white/55">{k}</div>
-      <div className="mt-2 text-sm text-white/85">{v}</div>
-    </div>
   );
 }
