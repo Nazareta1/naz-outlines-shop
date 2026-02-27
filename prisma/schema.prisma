@@ -15,43 +15,50 @@ model Product {
   currency    String      @default("EUR")
   imageUrl    String?
   active      Boolean     @default(true)
+
+  // ✅ Stock per size (default 10)
+  stockS      Int         @default(10)
+  stockM      Int         @default(10)
+  stockL      Int         @default(10)
+
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   items       OrderItem[]
 }
 
 model Order {
-  id                String      @id @default(cuid())
-  createdAt         DateTime    @default(now())
-  stripeSessionId   String?     @unique
-  email             String?
-  addressLine1      String?
-  addressLine2      String?
-  city              String?
-  country           String?
-  currency          String      @default("EUR")
-  name              String?
+  id                      String      @id @default(cuid())
+  createdAt               DateTime    @default(now())
+  stripeSessionId         String?     @unique
+  email                   String?
+  addressLine1            String?
+  addressLine2            String?
+  city                    String?
+  country                 String?
+  currency                String      @default("EUR")
+  name                    String?
 
-  paymentStatus     String      @default("pending")
-  fulfillmentStatus String      @default("unfulfilled")
+  paymentStatus           String      @default("pending")
+  fulfillmentStatus       String      @default("unfulfilled")
 
-  shippingCarrier   String?
-  trackingNumber    String?
-  shippedAt         DateTime?
+  shippingCarrier         String?
+  trackingNumber          String?
+  shippedAt               DateTime?
 
-  phone             String?
-  postalCode        String?
-  region            String?
-  shippingCents     Int         @default(0)
-  stripePaymentId   String?     @unique
-  subtotalCents     Int         @default(0)
-  totalCents        Int         @default(0)
-  updatedAt         DateTime    @updatedAt
+  phone                   String?
+  postalCode              String?
+  region                  String?
+  shippingCents           Int         @default(0)
+  stripePaymentId         String?     @unique
+  subtotalCents           Int         @default(0)
+  totalCents              Int         @default(0)
+  updatedAt               DateTime    @updatedAt
 
-  items             OrderItem[]
+  items                   OrderItem[]
+
   confirmationEmailSentAt DateTime?
-adminEmailSentAt        DateTime?
-lastStripeEventId       String?   @unique
+  adminEmailSentAt        DateTime?
+  lastStripeEventId       String?     @unique
 }
 
 model OrderItem {
@@ -61,6 +68,7 @@ model OrderItem {
   name       String
   priceCents Int
   quantity   Int
+  size       String?  // ✅ store size on item (optional, but recommended)
   createdAt  DateTime @default(now())
 
   order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)

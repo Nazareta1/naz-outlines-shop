@@ -1,3 +1,4 @@
+// app/api/webhook/route.ts
 import Stripe from "stripe";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
@@ -10,23 +11,41 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey, {
-  // jei pas tave jau nustatyta kitur – ok. Šita versija saugi palikti.
-
+  // apiVersion optional — palik tuščią jei viskas veikia
+  // apiVersion: "2024-06-20",
 });
 
 function toCents(n: number | null | undefined) {
   return typeof n === "number" ? n : 0;
 }
 
+type Size = "S" | "M" | "L";
+
+function isSize(s: any): s is Size {
+  return s === "S" || s === "M" || s === "L";
+}
+
+function stockField(size: Size): "stockS" | "stockM" | "stockL" {
+  if (size === "S") return "stockS";
+  if (size === "M") return "stockM";
+  return "stockL";
+}
+
 export async function POST(req: Request) {
   const sig = (await headers()).get("stripe-signature");
   if (!sig) {
-    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing stripe-signature header" },
+      { status: 400 }
+    );
   }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    return NextResponse.json({ error: "Missing STRIPE_WEBHOOK_SECRET" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Missing STRIPE_WEBHOOK_SECRET" },
+      { status: 500 }
+    );
   }
 
   let event: Stripe.Event;
@@ -47,13 +66,13 @@ export async function POST(req: Request) {
     });
     if (already) return NextResponse.json({ ok: true, deduped: true });
   } catch {
-    // if lookup fails, continue (we'll still try to process)
+    // if lookup fails, continue
   }
 
   try {
     switch (event.type) {
       /**
-       * Primary event: payment done and checkout completed
+       * Primary events: payment done and checkout completed
        */
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded": {
@@ -86,92 +105,146 @@ export async function POST(req: Request) {
             ? full.payment_intent
             : full.payment_intent?.id ?? null;
 
-        // Build order items from Stripe line items
         const lineItems = full.line_items?.data ?? [];
 
-        // Create/Update order by stripeSessionId (unique)
-        const order = await prisma.order.upsert({
-          where: { stripeSessionId: full.id },
-          update: {
-            email: customer?.email ?? null,
-            name: customer?.name ?? null,
-            phone: customer?.phone ?? null,
-
-            addressLine1: address?.line1 ?? null,
-            addressLine2: address?.line2 ?? null,
-            city: address?.city ?? null,
-            region: address?.state ?? null,
-            postalCode: address?.postal_code ?? null,
-            country: address?.country ?? null,
-
-            currency,
-            shippingCents,
-            subtotalCents: amountSubtotal,
-            totalCents: amountTotal,
-
-            paymentStatus: "paid",
-            fulfillmentStatus: "unfulfilled",
-
-            stripePaymentId: stripePaymentId ?? undefined,
-            lastStripeEventId: event.id,
-          },
-          create: {
-            stripeSessionId: full.id,
-            stripePaymentId: stripePaymentId ?? null,
-            lastStripeEventId: event.id,
-
-            email: customer?.email ?? null,
-            name: customer?.name ?? null,
-            phone: customer?.phone ?? null,
-
-            addressLine1: address?.line1 ?? null,
-            addressLine2: address?.line2 ?? null,
-            city: address?.city ?? null,
-            region: address?.state ?? null,
-            postalCode: address?.postal_code ?? null,
-            country: address?.country ?? null,
-
-            currency,
-            shippingCents,
-            subtotalCents: amountSubtotal,
-            totalCents: amountTotal,
-
-            paymentStatus: "paid",
-            fulfillmentStatus: "unfulfilled",
-          },
-          select: { id: true },
-        });
-
-        // Replace items (safe idempotent strategy)
-        await prisma.orderItem.deleteMany({
-          where: { orderId: order.id },
-        });
-
-        // Create items based on Stripe line items
-        const createItems = lineItems.map((li) => {
+        // ✅ Build "cart" from Stripe line items metadata
+        // We will:
+        // 1) create/update Order
+        // 2) replace OrderItems
+        // 3) decrement stock in ONE transaction
+        const cart = lineItems.map((li) => {
           const qty = li.quantity ?? 1;
           const unitAmount = toCents(li.price?.unit_amount);
 
-          // productId comes from Stripe Product metadata (created from price_data.product_data)
           const stripeProduct = li.price?.product as Stripe.Product | null;
-          const productIdFromMetadata =
+
+          const productId =
             (stripeProduct?.metadata?.productId as string | undefined) ?? undefined;
 
-          return prisma.orderItem.create({
-            data: {
-              orderId: order.id,
-              productId: productIdFromMetadata ?? "unknown", // fallback (should not happen)
-              name: li.description ?? stripeProduct?.name ?? "Item",
-              priceCents: unitAmount,
-              quantity: qty,
-            },
-          });
+          const sizeRaw =
+            (stripeProduct?.metadata?.size as string | undefined) ?? undefined;
+
+          const size = isSize(sizeRaw) ? sizeRaw : null;
+
+          if (!productId) {
+            throw new Error("Missing productId in Stripe product metadata");
+          }
+          if (!size) {
+            throw new Error("Missing/invalid size in Stripe product metadata");
+          }
+
+          return {
+            productId,
+            size,
+            qty,
+            unitAmount,
+            name: li.description ?? stripeProduct?.name ?? "Item",
+          };
         });
 
-        // Run creates in transaction
-        await prisma.$transaction(createItems);
+        // ✅ Run everything atomically
+        const result = await prisma.$transaction(async (tx) => {
+          // Create/Update order by stripeSessionId (unique)
+          const order = await tx.order.upsert({
+            where: { stripeSessionId: full.id },
+            update: {
+              email: customer?.email ?? null,
+              name: customer?.name ?? null,
+              phone: customer?.phone ?? null,
 
-        return NextResponse.json({ ok: true });
+              addressLine1: address?.line1 ?? null,
+              addressLine2: address?.line2 ?? null,
+              city: address?.city ?? null,
+              region: address?.state ?? null,
+              postalCode: address?.postal_code ?? null,
+              country: address?.country ?? null,
+
+              currency,
+              shippingCents,
+              subtotalCents: amountSubtotal,
+              totalCents: amountTotal,
+
+              paymentStatus: "paid",
+              fulfillmentStatus: "unfulfilled",
+
+              stripePaymentId: stripePaymentId ?? undefined,
+              lastStripeEventId: event.id,
+            },
+            create: {
+              stripeSessionId: full.id,
+              stripePaymentId: stripePaymentId ?? null,
+              lastStripeEventId: event.id,
+
+              email: customer?.email ?? null,
+              name: customer?.name ?? null,
+              phone: customer?.phone ?? null,
+
+              addressLine1: address?.line1 ?? null,
+              addressLine2: address?.line2 ?? null,
+              city: address?.city ?? null,
+              region: address?.state ?? null,
+              postalCode: address?.postal_code ?? null,
+              country: address?.country ?? null,
+
+              currency,
+              shippingCents,
+              subtotalCents: amountSubtotal,
+              totalCents: amountTotal,
+
+              paymentStatus: "paid",
+              fulfillmentStatus: "unfulfilled",
+            },
+            select: { id: true },
+          });
+
+          // Replace items (idempotent)
+          await tx.orderItem.deleteMany({
+            where: { orderId: order.id },
+          });
+
+          // Create items
+          for (const it of cart) {
+            await tx.orderItem.create({
+              data: {
+                orderId: order.id,
+                productId: it.productId,
+                name: it.name,
+                priceCents: it.unitAmount,
+                quantity: it.qty,
+                size: it.size, // ✅ store size
+              },
+            });
+          }
+
+          // ✅ Decrement stock per size with safety check
+          // We do "updateMany" with condition stock >= qty, so it can't go negative.
+          for (const it of cart) {
+            const field = stockField(it.size);
+
+            const where: any = { id: it.productId };
+            where[field] = { gte: it.qty };
+
+            const data: any = {};
+            data[field] = { decrement: it.qty };
+
+            const updated = await tx.product.updateMany({
+              where,
+              data,
+            });
+
+            if (updated.count !== 1) {
+              // abort transaction => Stripe will retry (but note: customer already paid)
+              // In practice, this should never happen because checkout endpoint checks stock.
+              throw new Error(
+                `Stock underflow for product ${it.productId} size ${it.size}`
+              );
+            }
+          }
+
+          return { orderId: order.id };
+        });
+
+        return NextResponse.json({ ok: true, orderId: result.orderId });
       }
 
       /**
@@ -200,7 +273,10 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("Webhook handler error:", err);
-    // still return 200 sometimes? No—better return 500 so Stripe retries.
-    return NextResponse.json({ error: err?.message ?? "Webhook error" }, { status: 500 });
+    // return 500 so Stripe retries
+    return NextResponse.json(
+      { error: err?.message ?? "Webhook error" },
+      { status: 500 }
+    );
   }
 }

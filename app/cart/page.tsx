@@ -88,12 +88,12 @@ export default function CartPage() {
                           {i.name}
                         </div>
                         <div className="mt-1 text-[11px] tracking-[0.28em] uppercase text-white/45">
-                          Smoke Black
+                          Smoke Black • {i.size}
                         </div>
 
                         <div className="mt-5 flex items-center gap-3">
                           <button
-                            onClick={() => decrement(i.id)}
+                            onClick={() =>increment(i.id, i.size)}
                             className="h-10 w-10 rounded-2xl border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06] hover:text-white transition"
                             aria-label="Decrease quantity"
                           >
@@ -105,7 +105,7 @@ export default function CartPage() {
                           </div>
 
                           <button
-                            onClick={() => increment(i.id)}
+                            onClick={() => increment(i.id, i.size)}
                             className="h-10 w-10 rounded-2xl border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06] hover:text-white transition"
                             aria-label="Increase quantity"
                           >
@@ -113,7 +113,7 @@ export default function CartPage() {
                           </button>
 
                           <button
-                            onClick={() => removeFromCart(i.id)}
+                            onClick={() => removeFromCart(i.id, i.size)}
                             className="ml-2 text-[11px] tracking-[0.28em] uppercase text-white/45 hover:text-white/80 transition"
                           >
                             Remove
