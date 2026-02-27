@@ -1,205 +1,159 @@
-// app/order/success/page.tsx
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-export const runtime = "nodejs"; // Prisma needs Node runtime on Vercel
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function formatMoney(cents: number, currency: string) {
   const amount = (cents / 100).toFixed(2);
-  return currency?.toUpperCase() === "EUR" ? `${amount} €` : `${amount} ${currency}`;
+  const cur = (currency || "EUR").toUpperCase();
+  return cur === "EUR" ? `${amount} €` : `${amount} ${cur}`;
 }
 
-function shortId(id?: string | null) {
-  if (!id) return "—";
-  return id.length > 16 ? `${id.slice(0, 10)}…${id.slice(-6)}` : id;
+function badge(status: string) {
+  const s = (status || "").toLowerCase();
+
+  if (s === "paid") return "border-green-500/20 bg-green-500/10 text-green-200";
+  if (s === "pending") return "border-yellow-500/20 bg-yellow-500/10 text-yellow-200";
+  if (s === "failed") return "border-red-500/20 bg-red-500/10 text-red-200";
+  if (s === "refunded") return "border-zinc-500/20 bg-zinc-500/10 text-zinc-200";
+
+  if (s === "unfulfilled") return "border-white/10 bg-white/[0.03] text-white/70";
+  if (s === "fulfilled") return "border-blue-500/20 bg-blue-500/10 text-blue-200";
+  if (s === "shipped") return "border-purple-500/20 bg-purple-500/10 text-purple-200";
+  if (s === "cancelled") return "border-zinc-500/20 bg-zinc-500/10 text-zinc-200";
+
+  return "border-white/10 bg-white/[0.03] text-white/70";
 }
 
-export default async function OrderSuccessPage({
-  searchParams,
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = (await searchParams) ?? {};
-  const sessionIdRaw = Array.isArray(sp.session_id) ? sp.session_id[0] : sp.session_id;
-  const session_id = (sessionIdRaw ?? "").trim();
+export default async function AdminOrdersPage() {
+  const orders = await prisma.order.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      createdAt: true,
+      email: true,
+      name: true,
+      country: true,
+      currency: true,
+      totalCents: true,
+      paymentStatus: true,
+      fulfillmentStatus: true,
+      shippingCarrier: true,
+      trackingNumber: true,
+      items: { select: { quantity: true } },
+    },
+  });
 
-  const order = session_id
-    ? await prisma.order.findUnique({
-        where: { stripeSessionId: session_id },
-        include: {
-          items: true,
-        },
-      })
-    : null;
-
-  const itemsTotal = order
-    ? order.items.reduce((sum, i) => sum + i.priceCents * i.quantity, 0)
-    : 0;
+  const totalCount = orders.length;
 
   return (
-    <main className="max-w-4xl mx-auto p-6 md:p-10">
-      <div className="border rounded-2xl shadow-sm bg-white p-6 md:p-8">
-        <div className="flex items-start justify-between gap-4">
+    <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
+      <div className="mx-auto max-w-6xl px-6 pt-12 pb-24">
+        {/* Header */}
+        <div className="flex items-end justify-between gap-6 border-b border-white/10 pb-10">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Payment successful ✅</h1>
-            <p className="text-gray-600 mt-2">
-              Ačiū! Užsakymas priimtas. Jei užsakymas dar neatsirado – perkrauk puslapį po kelių
-              sekundžių (webhook gali užtrukti).
-            </p>
+            <div className="text-xs tracking-[0.35em] uppercase text-white/45">
+              Admin
+            </div>
+            <h1 className="mt-4 text-4xl md:text-5xl font-semibold tracking-[-0.02em] leading-[1.05]">
+              Orders
+            </h1>
+            <div className="mt-4 text-sm text-white/55">
+              Showing {totalCount} most recent
+            </div>
           </div>
 
           <Link
-            href="/products"
-            className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg bg-black text-white hover:opacity-90"
+            href="/"
+            className="hidden sm:inline-flex text-[11px] tracking-[0.28em] uppercase text-white/70 hover:text-white transition"
           >
-            Continue shopping →
+            Back to store →
           </Link>
         </div>
 
-        {/* session id missing */}
-        {!session_id && (
-          <div className="mt-6 rounded-xl border p-4 text-sm text-gray-700">
-            Trūksta <span className="font-mono">session_id</span>. Į šį puslapį reikia patekti po
-            Stripe apmokėjimo per success linką.
+        {/* Empty */}
+        {orders.length === 0 ? (
+          <div className="mt-12 border border-white/10 bg-[#141416] rounded-[28px] p-10">
+            <div className="text-xs tracking-[0.35em] uppercase text-white/45">
+              Empty
+            </div>
+            <div className="mt-4 text-white/65">No orders yet.</div>
           </div>
-        )}
-
-        {/* session id exists but order not found yet */}
-        {session_id && !order && (
-          <div className="mt-6 rounded-xl border p-4 text-sm text-gray-700">
-            Užsakymo pagal šį <span className="font-mono">session_id</span> dar nerasta.
-            <div className="text-gray-500 mt-1">
-              Session: <span className="font-mono">{shortId(session_id)}</span>
-            </div>
-            <div className="mt-3 flex gap-3">
-              <Link
-                href={`/order/success?session_id=${encodeURIComponent(session_id)}`}
-                className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
-              >
-                Refresh
-              </Link>
-              <Link
-                href="/"
-                className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
-              >
-                Back home
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* order found */}
-        {order && (
-          <div className="mt-6 space-y-6">
-            <div className="rounded-2xl border p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm text-gray-500">Order</div>
-                  <div className="font-mono text-sm">{order.id}</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Stripe session: <span className="font-mono">{shortId(order.stripeSessionId)}</span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">Total</div>
-                  <div className="text-lg font-semibold">
-                    {formatMoney(order.totalCents, order.currency)}
-                  </div>
-                </div>
-              </div>
+        ) : (
+          <div className="mt-12 overflow-hidden rounded-[28px] border border-white/10 bg-[#141416]">
+            <div className="grid grid-cols-12 gap-3 border-b border-white/10 px-6 py-4 text-[11px] tracking-[0.28em] uppercase text-white/45">
+              <div className="col-span-4">Order</div>
+              <div className="col-span-3">Customer</div>
+              <div className="col-span-2">Status</div>
+              <div className="col-span-2 text-right">Total</div>
+              <div className="col-span-1 text-right">Items</div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Shipping */}
-              <div className="rounded-2xl border p-5">
-                <div className="font-semibold mb-2">Shipping</div>
-                <div className="text-sm text-gray-700 space-y-1">
-                  <div>{order.name || "—"}</div>
-                  <div className="text-gray-500">{order.email || "—"}</div>
-                  <div className="text-gray-500">{order.phone || "—"}</div>
+            {orders.map((o) => {
+              const itemsCount = o.items.reduce((acc, it) => acc + it.quantity, 0);
 
-                  <div className="pt-3">
-                    <div>{order.addressLine1 || "—"}</div>
-                    {order.addressLine2 ? <div>{order.addressLine2}</div> : null}
-                    <div>
-                      {order.postalCode || "—"} {order.city || ""}
+              return (
+                <Link
+                  key={o.id}
+                  href={`/admin/orders/${o.id}`}
+                  className="block px-6 py-5 hover:bg-white/[0.04] transition border-b border-white/10 last:border-b-0"
+                >
+                  <div className="grid grid-cols-12 gap-3 items-center">
+                    <div className="col-span-4 min-w-0">
+                      <div className="text-sm text-white/85 truncate">{o.id}</div>
+                      <div className="mt-1 text-xs text-white/45">
+                        {new Date(o.createdAt).toLocaleString()}
+                        {o.country ? ` • ${o.country}` : ""}
+                      </div>
+                      {o.trackingNumber ? (
+                        <div className="mt-1 text-xs text-white/45">
+                          {o.shippingCarrier ? `${o.shippingCarrier} • ` : ""}{o.trackingNumber}
+                        </div>
+                      ) : null}
                     </div>
-                    <div>{order.region || "—"}</div>
-                    <div>{order.country || "—"}</div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Totals */}
-              <div className="rounded-2xl border p-5">
-                <div className="font-semibold mb-2">Totals</div>
-                <div className="text-sm text-gray-700 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Items total</span>
-                    <span>{formatMoney(itemsTotal, order.currency)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Subtotal</span>
-                    <span>{formatMoney(order.subtotalCents, order.currency)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Shipping</span>
-                    <span>{formatMoney(order.shippingCents, order.currency)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold pt-2 border-t">
-                    <span>Total</span>
-                    <span>{formatMoney(order.totalCents, order.currency)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Items */}
-            <div className="rounded-2xl border p-5">
-              <div className="font-semibold mb-3">Items</div>
-              <div className="space-y-3">
-                {order.items.map((it) => (
-                  <div
-                    key={it.id}
-                    className="flex items-center justify-between gap-3 border-b last:border-b-0 pb-3 last:pb-0"
-                  >
-                    <div>
-                      <div className="font-medium">{it.name}</div>
-                      <div className="text-xs text-gray-500">
-                        Qty: {it.quantity} • {formatMoney(it.priceCents, order.currency)} each
+                    <div className="col-span-3 min-w-0">
+                      <div className="text-sm text-white/80 truncate">
+                        {o.name || "—"}
+                      </div>
+                      <div className="mt-1 text-xs text-white/45 truncate">
+                        {o.email || "—"}
                       </div>
                     </div>
-                    <div className="font-semibold">
-                      {formatMoney(it.priceCents * it.quantity, order.currency)}
+
+                    <div className="col-span-2 flex flex-col gap-2">
+                      <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(o.paymentStatus)}`}>
+                        {o.paymentStatus}
+                      </span>
+                      <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(o.fulfillmentStatus)}`}>
+                        {o.fulfillmentStatus}
+                      </span>
+                    </div>
+
+                    <div className="col-span-2 text-right">
+                      <div className="text-sm font-semibold text-white/85">
+                        {formatMoney(o.totalCents, o.currency)}
+                      </div>
+                      <div className="mt-1 text-xs text-white/45">
+                        {o.currency}
+                      </div>
+                    </div>
+
+                    <div className="col-span-1 text-right text-sm text-white/70">
+                      {itemsCount}
                     </div>
                   </div>
-                ))}
-
-                {order.items.length === 0 && (
-                  <div className="text-sm text-gray-500">No items found for this order.</div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/products"
-                className="inline-flex sm:hidden items-center px-4 py-2 rounded-lg bg-black text-white hover:opacity-90"
-              >
-                Continue shopping →
-              </Link>
-
-              <Link
-                href="/"
-                className="inline-flex items-center px-4 py-2 rounded-lg border hover:bg-gray-50"
-              >
-                Back to home
-              </Link>
-            </div>
+                </Link>
+              );
+            })}
           </div>
         )}
+
+        <div className="mt-10 text-[11px] tracking-[0.28em] uppercase text-white/40">
+          Controlled operations
+        </div>
       </div>
     </main>
   );
