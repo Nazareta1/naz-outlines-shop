@@ -7,12 +7,6 @@ import ProductClient from "./ProductClient";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function formatMoney(cents: number, currency: string) {
-  const amount = (cents / 100).toFixed(2);
-  const cur = (currency || "EUR").toUpperCase();
-  return cur === "EUR" ? `€${amount}` : `${amount} ${cur}`;
-}
-
 function getSpecs(price: number) {
   // 125€ modelis
   if (price === 12500) {
@@ -77,14 +71,13 @@ export default async function ProductPage({
     <ProductClient
       product={{
         id: product.id,
-        name: specs.subtitle, // rodome engineered pavadinimą
+        name: specs.subtitle, // rodom engineered pavadinimą
         priceCents: product.priceCents,
         currency: product.currency,
         imageUrl: product.imageUrl,
       }}
       specs={specs}
       gallery={gallery}
-      formatMoney={formatMoney}
     />
   );
 }
