@@ -2,35 +2,38 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-export type CartSize = "S" | "M" | "L";
-
 export type CartItem = {
-  id: string;
+  id: string;              // Product.id
   name: string;
-  size: CartSize;
-  priceCents: number;
-  currency?: string;
+  priceCents: number;      // cents
+  currency?: string;       // "EUR"
   quantity: number;
   imageUrl?: string;
+  size: "S" | "M" | "L";   // ✅ size required
 };
+
+// ✅ unique key per cart line (id + size)
+function lineKey(item: Pick<CartItem, "id" | "size">) {
+  return `${item.id}__${item.size}`;
+}
 
 export interface CartContextValue {
   items: CartItem[];
   subtotalCents: number;
   count: number;
 
-  addToCart: (item: CartItem) => void;
-  increment: (id: string, size: CartSize) => void;
-  decrement: (id: string, size: CartSize) => void;
-  removeFromCart: (id: string, size: CartSize) => void;
+  addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
+
+  increment: (key: string) => void;
+  decrement: (key: string) => void;
+  removeFromCart: (key: string) => void;
 
   clearCart: () => void;
   setItems: (items: CartItem[]) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
-
-const STORAGE_KEY = "naz_cart_v3";
+const STORAGE_KEY = "cart_items_v3"; // ✅ bump key so old carts don't break
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItemsState] = useState<CartItem[]>([]);
@@ -38,9 +41,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setItemsState(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setItemsState(parsed);
+      }
     } catch (e) {
-      console.error("Cart load error", e);
+      console.error("Failed to load cart from localStorage", e);
     }
   }, []);
 
@@ -48,7 +54,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch (e) {
-      console.error("Cart save error", e);
+      console.error("Failed to save cart to localStorage", e);
     }
   }, [items]);
 
@@ -64,61 +70,62 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const setItems = (newItems: CartItem[]) => setItemsState(newItems);
 
-  const addToCart = (item: CartItem) => {
+  const addToCart: CartContextValue["addToCart"] = (item) => {
+    const qty = item.quantity ?? 1;
+
     setItemsState((prev) => {
-      const existing = prev.find((p) => p.id === item.id && p.size === item.size);
+      const key = lineKey(item);
+      const existing = prev.find((p) => lineKey(p) === key);
+
       if (existing) {
         return prev.map((p) =>
-          p.id === item.id && p.size === item.size
-            ? { ...p, quantity: p.quantity + item.quantity }
-            : p
+          lineKey(p) === key ? { ...p, quantity: p.quantity + qty } : p
         );
       }
-      return [...prev, item];
+
+      return [
+        ...prev,
+        {
+          ...item,
+          quantity: qty,
+        } as CartItem,
+      ];
     });
   };
 
-  const increment = (id: string, size: CartSize) => {
+  const increment = (key: string) => {
     setItemsState((prev) =>
-      prev.map((it) =>
-        it.id === id && it.size === size ? { ...it, quantity: it.quantity + 1 } : it
-      )
+      prev.map((it) => (lineKey(it) === key ? { ...it, quantity: it.quantity + 1 } : it))
     );
   };
 
-  const decrement = (id: string, size: CartSize) => {
+  const decrement = (key: string) => {
     setItemsState((prev) =>
       prev
-        .map((it) =>
-          it.id === id && it.size === size ? { ...it, quantity: it.quantity - 1 } : it
-        )
+        .map((it) => (lineKey(it) === key ? { ...it, quantity: it.quantity - 1 } : it))
         .filter((it) => it.quantity > 0)
     );
   };
 
-  const removeFromCart = (id: string, size: CartSize) => {
-    setItemsState((prev) => prev.filter((it) => !(it.id === id && it.size === size)));
+  const removeFromCart = (key: string) => {
+    setItemsState((prev) => prev.filter((it) => lineKey(it) !== key));
   };
 
   const clearCart = () => setItemsState([]);
 
-  return (
-    <CartContext.Provider
-      value={{
-        items,
-        subtotalCents,
-        count,
-        addToCart,
-        increment,
-        decrement,
-        removeFromCart,
-        clearCart,
-        setItems,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  const value: CartContextValue = {
+    items,
+    subtotalCents,
+    count,
+    addToCart,
+    increment,
+    decrement,
+    removeFromCart,
+    clearCart,
+    setItems,
+  };
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
@@ -126,3 +133,6 @@ export function useCart() {
   if (!ctx) throw new Error("useCart must be used within CartProvider");
   return ctx;
 }
+
+// ✅ export helper for pages (optional)
+export const cartLineKey = lineKey;

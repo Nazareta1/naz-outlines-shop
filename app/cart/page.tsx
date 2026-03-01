@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import { useCart } from "./context";
+import { useCart, cartLineKey } from "./context";
 
 function eurFromCents(cents: number) {
   return (cents / 100).toFixed(2);
@@ -93,7 +93,7 @@ export default function CartPage() {
 
                         <div className="mt-5 flex items-center gap-3">
                           <button
-                            onClick={() =>increment(i.id, i.size)}
+                            onClick={() => decrement(cartLineKey(i))}
                             className="h-10 w-10 rounded-2xl border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06] hover:text-white transition"
                             aria-label="Decrease quantity"
                           >
@@ -105,7 +105,7 @@ export default function CartPage() {
                           </div>
 
                           <button
-                            onClick={() => increment(i.id, i.size)}
+                            onClick={() => increment(cartLineKey(i))}
                             className="h-10 w-10 rounded-2xl border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06] hover:text-white transition"
                             aria-label="Increase quantity"
                           >
@@ -113,7 +113,7 @@ export default function CartPage() {
                           </button>
 
                           <button
-                            onClick={() => removeFromCart(i.id, i.size)}
+                            onClick={() => removeFromCart(cartLineKey(i))}
                             className="ml-2 text-[11px] tracking-[0.28em] uppercase text-white/45 hover:text-white/80 transition"
                           >
                             Remove

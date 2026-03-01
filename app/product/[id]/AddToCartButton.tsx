@@ -26,14 +26,13 @@ export default function AddToCartButton({
     if (!size) return;
 
     addToCart({
-      id: product.id,
-      name: product.name,
-      size,
-      priceCents: product.priceCents,
-      currency: product.currency,
-      imageUrl: product.imageUrl ?? undefined,
-      quantity: 1,
-    });
+  id: product.id,
+  name: product.name,
+  priceCents: product.priceCents,
+  currency: product.currency,
+  imageUrl: product.imageUrl ?? undefined,
+  size: selectedSize,
+});
 
     setAdded(true);
   }
