@@ -5,6 +5,7 @@ import { useCart } from "@/app/cart/context";
 export default function AddToCartButton({
   product,
   selectedSize,
+  inStock,
 }: {
   product: {
     id: string;
@@ -14,10 +15,13 @@ export default function AddToCartButton({
     imageUrl?: string | null;
   };
   selectedSize: "S" | "M" | "L";
+  inStock: boolean;
 }) {
   const { addToCart } = useCart();
 
   function handleAdd() {
+    if (!inStock) return;
+
     addToCart({
       id: product.id,
       name: product.name,
@@ -33,9 +37,15 @@ export default function AddToCartButton({
     <button
       type="button"
       onClick={handleAdd}
-      className="px-6 py-3 border border-white"
+      disabled={!inStock}
+      className={[
+        "inline-flex items-center justify-center rounded-full px-6 py-4 text-xs font-semibold uppercase tracking-[0.22em] transition",
+        inStock
+          ? "border border-white/20 bg-white text-black hover:opacity-90"
+          : "cursor-not-allowed border border-white/10 bg-white/10 text-white/35",
+      ].join(" ")}
     >
-      Add to cart
+      {inStock ? `Add to cart · ${selectedSize}` : "Out of stock"}
     </button>
   );
 }
