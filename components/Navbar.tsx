@@ -10,7 +10,7 @@ export default function Navbar() {
             <span className="text-xs tracking-[0.3em] pl-1 opacity-90">NO</span>
           </span>
           <span className="text-sm font-semibold tracking-[0.18em]">
-            NAZ OUTLINES
+            NAZ
           </span>
         </Link>
 

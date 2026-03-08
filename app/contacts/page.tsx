@@ -23,8 +23,8 @@ export default function ContactsPage() {
         </div>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-3">
-          <Card title="Email">orders@nazoutlines.com</Card>
-          <Card title="Instagram">@nazoutlines</Card>
+          <Card title="Email">orders@NAZ.com</Card>
+          <Card title="Instagram">@NAZ</Card>
           <Card title="Support">Responses within 24–48h</Card>
         </div>
 

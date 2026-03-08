@@ -46,12 +46,12 @@ export function orderConfirmationEmail(data: {
     )
     .join("");
 
-  const subject = `Naz Outlines — Order Confirmed`;
+  const subject = `NAZ — Order Confirmed`;
 
   const html = `
   <div style="background:#0b0f14;padding:40px 0;font-family:Arial, sans-serif;">
     <div style="max-width:600px;margin:0 auto;background:#111;border-radius:16px;padding:30px;">
-      <div style="letter-spacing:4px;color:#888;font-size:12px;">NAZ OUTLINES</div>
+      <div style="letter-spacing:4px;color:#888;font-size:12px;">NAZ</div>
       <h1 style="color:#fff;margin-top:10px;">Order confirmed</h1>
       <p style="color:#aaa;">
         ${customerName ? `Hi ${customerName},` : ""} thank you for your purchase.

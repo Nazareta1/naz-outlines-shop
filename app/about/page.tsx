@@ -19,7 +19,7 @@ export default function AboutPage() {
             <span className="block text-white/60">Controlled output.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-sm md:text-base text-white/60 leading-relaxed">
-            NAZ OUTLINES is built around form, tension and restraint. Pieces are
+            NAZ is built around form, tension and restraint. Pieces are
             designed as systems: cut, weight, surface, and movement.
           </p>
         </div>
