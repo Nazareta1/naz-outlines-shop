@@ -99,12 +99,17 @@ async function handlePaidCheckout(
       include: { items: true },
     }));
 
+  // Neradus order negrąžinam klaidos Stripe'ui – tiesiog užlogginam
   if (!order) {
     console.warn("Webhook: order not found for session", session.id);
     return;
   }
 
-  if (order.lastStripeEventId === stripeEventId || order.paymentStatus === "paid") {
+  // Idempotency – jei jau apdorotas, nieko nebedarom
+  if (
+    order.lastStripeEventId === stripeEventId ||
+    order.paymentStatus === "paid"
+  ) {
     return;
   }
 
@@ -155,9 +160,12 @@ async function handlePaidCheckout(
         region: address?.state || freshOrder.region,
         postalCode: address?.postal_code || freshOrder.postalCode,
         country: address?.country || freshOrder.country,
-        currency: (session.currency || freshOrder.currency || "eur").toUpperCase(),
-        subtotalCents:
-          session.amount_subtotal ?? freshOrder.subtotalCents,
+        currency: (
+          session.currency ||
+          freshOrder.currency ||
+          "eur"
+        ).toUpperCase(),
+        subtotalCents: session.amount_subtotal ?? freshOrder.subtotalCents,
         totalCents: session.amount_total ?? freshOrder.totalCents,
         shippingCents:
           session.total_details?.amount_shipping ?? freshOrder.shippingCents,
@@ -168,7 +176,8 @@ async function handlePaidCheckout(
 }
 
 export async function POST(req: Request) {
-  const sig = (await headers()).get("stripe-signature");
+  const headerStore = await headers();
+  const sig = headerStore.get("stripe-signature");
 
   if (!sig) {
     return new Response("Missing stripe-signature header", { status: 400 });
@@ -177,13 +186,16 @@ export async function POST(req: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    return new Response("Missing STRIPE_WEBHOOK_SECRET env var", { status: 500 });
+    return new Response("Missing STRIPE_WEBHOOK_SECRET env var", {
+      status: 500,
+    });
   }
+
+  const body = await req.text();
 
   let event: Stripe.Event;
 
   try {
-    const body = await req.text();
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (error) {
     console.error("Webhook signature verification failed:", error);
@@ -199,8 +211,14 @@ export async function POST(req: Request) {
         break;
       }
 
-      default:
+      // Šitą eventą tiesiog priimam, bet nieko nedarom
+      case "payment_intent.succeeded": {
         break;
+      }
+
+      default: {
+        break;
+      }
     }
 
     return Response.json({ received: true });
