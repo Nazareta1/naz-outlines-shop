@@ -1,7 +1,5 @@
-// app/page.tsx
 import Link from "next/link";
 import Image from "next/image";
-import Navbar from "@/components/Navbar";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -13,227 +11,209 @@ function formatMoney(cents: number, currency: string) {
   return cur === "EUR" ? `€${amount}` : `${amount} ${cur}`;
 }
 
-function getProductNote(priceCents: number) {
-  if (priceCents === 12500) return "Controlled silhouette";
-  if (priceCents === 13900) return "Dark motorsport energy";
-  return "Limited production";
-}
-
 export default async function HomePage() {
   const products = await prisma.product.findMany({
     where: { active: true },
-    orderBy: { createdAt: "desc" },
-    take: 2,
+    orderBy: { createdAt: "desc" as any },
+    take: 4,
   });
 
   return (
-    <main className="min-h-screen bg-[#0B0B0D] text-[#F2F2F2]">
-      <Navbar />
+    <div className="bg-transparent text-white">
+      <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.1),transparent_35%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_35%,rgba(0,0,0,0.4))]" />
 
-      {/* HERO */}
-      <section className="relative">
-        <div className="mx-auto grid max-w-7xl items-end gap-12 px-6 pt-12 pb-24 md:pt-16 md:pb-32 lg:grid-cols-12">
-          <div className="lg:col-span-5">
-            <div className="text-[11px] tracking-[0.42em] uppercase text-white/35">
+        <div className="container-naz relative grid min-h-[88vh] items-end gap-10 py-16 md:grid-cols-[1.15fr_0.85fr] md:py-20">
+          <div className="max-w-3xl pb-8 md:pb-14">
+            <p className="naz-eyebrow mb-6">Luxury streetwear / motorsport presence</p>
+
+            <h1 className="naz-heading-xl max-w-4xl text-white">
               NAZ
-            </div>
-
-            <h1 className="mt-8 text-5xl font-semibold leading-[0.92] tracking-[-0.05em] text-white/96 md:text-7xl xl:text-[6rem]">
-              Controlled
-              <br />
-              presence
             </h1>
 
-            <p className="mt-8 max-w-sm text-sm leading-relaxed text-white/48 md:text-base">
-              Structured garments shaped by weight, restraint and dark motorsport
-              energy.
+            <p className="mt-6 max-w-2xl text-base leading-8 text-white/72 sm:text-lg">
+              Luxury streetwear shaped by confidence, elegance, and controlled
+              intensity. Designed for presence. Built to be remembered.
             </p>
 
-            <div className="mt-10 flex items-center gap-6">
-              <Link
-                href="/products"
-                className="inline-flex items-center justify-center border border-white/15 bg-white/[0.04] px-8 py-3 text-[11px] tracking-[0.32em] uppercase text-white/82 hover:bg-white hover:text-black transition"
-              >
-                Enter
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Link href="/products" className="naz-button">
+                Shop Drop
               </Link>
-
-              <div className="text-[11px] tracking-[0.28em] uppercase text-white/35">
-                Drop 01
-              </div>
+              <Link href="/about" className="naz-button-secondary">
+                Read the Story
+              </Link>
             </div>
           </div>
 
-          <div className="lg:col-span-7">
-            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#121214]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_42%)]" />
-              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.04),transparent_35%,rgba(0,0,0,0.42))]" />
-
-              <div className="relative aspect-[4/5] w-full md:aspect-[16/11]">
+          <div className="relative flex items-end justify-center md:justify-end">
+            <div className="naz-card relative w-full max-w-[560px] overflow-hidden rounded-[2rem]">
+              <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.65),rgba(0,0,0,0.15))]" />
+              <div className="relative aspect-[4/5] w-full">
                 <Image
-                  src="/hero.jpg"
-                  alt="NAZ"
+                  src="/logo.png"
+                  alt="NAZ hero"
                   fill
-                  className="object-cover opacity-90"
-                  sizes="(max-width: 1024px) 100vw, 58vw"
+                  className="object-cover object-center opacity-90"
                   priority
                 />
               </div>
-            </div>
 
-            <div className="mt-4 flex items-center justify-between gap-4 text-[11px] tracking-[0.28em] uppercase text-white/32">
-              <span>Architectural showroom</span>
-              <span>Controlled light</span>
+              <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-white/55">
+                  Drop 01
+                </p>
+                <p className="mt-2 text-2xl font-medium text-white sm:text-3xl">
+                  Designed for presence.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* MANIFESTO */}
-      <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
-        <div className="border-t border-white/10 pt-16 md:pt-20">
-          <div className="max-w-4xl">
-            <div className="text-[11px] tracking-[0.38em] uppercase text-white/35">
-              Manifesto
-            </div>
+      <section className="container-naz py-18 border-b border-white/10 py-20">
+        <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="naz-eyebrow mb-4">New drop</p>
+            <h2 className="naz-heading-lg text-white">Featured pieces</h2>
+          </div>
 
-            <div className="mt-6 text-3xl leading-[1.02] tracking-[-0.04em] text-white/88 md:text-5xl">
-              Built on structure.
-              <br />
-              Engineered for presence.
-            </div>
+          <Link
+            href="/products"
+            className="text-sm uppercase tracking-[0.2em] text-white/65 transition hover:text-white"
+          >
+            View all
+          </Link>
+        </div>
 
-            <p className="mt-8 max-w-xl text-sm leading-relaxed text-white/42 md:text-base">
-              NAZ is built around silhouette, pressure and control. Each piece is
-              engineered, not decorated.
+        {products.length === 0 ? (
+          <div className="naz-card rounded-[1.75rem] p-8 text-white/70">
+            No active products yet. Add your first NAZ pieces in the admin or database.
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+            {products.map((product) => (
+              <Link
+                key={product.id}
+                href={`/product/${product.id}`}
+                className="group block"
+              >
+                <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03]">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden">
+                    {product.image ? (
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover object-center transition duration-500 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-white/[0.04] text-sm uppercase tracking-[0.22em] text-white/35">
+                        NAZ
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <h3 className="text-sm font-medium uppercase tracking-[0.14em] text-white">
+                        {product.name}
+                      </h3>
+                      <span className="text-sm text-white/70">
+                        {formatMoney(product.priceCents, product.currency)}
+                      </span>
+                    </div>
+
+                    {product.description ? (
+                      <p className="line-clamp-2 text-sm leading-7 text-white/50">
+                        {product.description}
+                      </p>
+                    ) : (
+                      <p className="text-sm leading-7 text-white/40">
+                        Premium NAZ piece.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="container-naz border-b border-white/10 py-20">
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="naz-card rounded-[1.75rem] p-8">
+            <p className="naz-eyebrow mb-4">Presence</p>
+            <h3 className="text-2xl font-medium text-white">
+              Built to be noticed without asking for attention.
+            </h3>
+            <p className="mt-4 text-sm leading-8 text-white/62">
+              NAZ is made for people who carry energy before they speak. Sharp,
+              controlled, elegant, and impossible to ignore.
+            </p>
+          </div>
+
+          <div className="naz-card rounded-[1.75rem] p-8">
+            <p className="naz-eyebrow mb-4">Quality</p>
+            <h3 className="text-2xl font-medium text-white">
+              Premium silhouettes with heavyweight attitude.
+            </h3>
+            <p className="mt-4 text-sm leading-8 text-white/62">
+              Oversized structure, strong lines, premium materials, and limited
+              pieces designed to feel substantial the moment you put them on.
+            </p>
+          </div>
+
+          <div className="naz-card rounded-[1.75rem] p-8">
+            <p className="naz-eyebrow mb-4">Energy</p>
+            <h3 className="text-2xl font-medium text-white">
+              Motorsport influence, translated into fashion presence.
+            </h3>
+            <p className="mt-4 text-sm leading-8 text-white/62">
+              Tension, movement, darkness, elegance, and speed shape the visual
+              language behind every NAZ release.
             </p>
           </div>
         </div>
       </section>
 
-      {/* PRODUCTS */}
-      <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
-        <div className="flex items-end justify-between gap-6 border-t border-white/10 pt-16 md:pt-20">
-          <div>
-            <div className="text-[11px] tracking-[0.38em] uppercase text-white/35">
-              Drop 01
-            </div>
-            <h2 className="mt-5 text-2xl leading-[1.02] tracking-[-0.04em] text-white/92 md:text-4xl">
-              Two pieces.
-              <br />
-              One direction.
-            </h2>
-          </div>
+      <section className="container-naz grid gap-10 py-20 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+        <div className="max-w-2xl">
+          <p className="naz-eyebrow mb-4">The story behind the name</p>
+          <h2 className="naz-heading-lg text-white">
+            NAZ began the moment confidence stopped asking for permission.
+          </h2>
+          <p className="mt-6 text-base leading-8 text-white/68">
+            What started as a name became an identity. NAZ is rooted in a moment
+            of freedom, self-trust, and becoming fully comfortable with being
+            seen exactly as you are.
+          </p>
+          <p className="mt-4 text-base leading-8 text-white/68">
+            That feeling now lives inside the brand — elegant, sharp, powerful,
+            and unapologetically present.
+          </p>
 
-          <Link
-            href="/products"
-            className="hidden md:inline-flex text-[11px] tracking-[0.28em] uppercase text-white/55 hover:text-white transition"
-          >
-            Shop all →
-          </Link>
-        </div>
-
-        <div className="mt-12 grid gap-12 md:grid-cols-2">
-          {products.map((p) => (
-            <Link key={p.id} href={`/product/${p.id}`} className="group block">
-              <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#121214]">
-                <div className="relative aspect-[4/5] w-full">
-                  <Image
-                    src={p.imageUrl || "/logo.png"}
-                    alt={p.name}
-                    fill
-                    className="object-contain p-10 opacity-90 transition duration-500 group-hover:scale-[1.015] group-hover:opacity-100 md:p-14"
-                    sizes="(max-width: 768px) 100vw, 48vw"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <div className="flex items-start justify-between gap-6">
-                  <div>
-                    <div className="text-lg tracking-[-0.02em] text-white/92 md:text-xl">
-                      {p.name}
-                    </div>
-                    <div className="mt-2 text-[11px] tracking-[0.28em] uppercase text-white/38">
-                      {getProductNote(p.priceCents)}
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-white/72 md:text-base">
-                    {formatMoney(p.priceCents, p.currency)}
-                  </div>
-                </div>
-
-                <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-5">
-                  <div className="text-[11px] tracking-[0.28em] uppercase text-white/32">
-                    Smoke Black
-                  </div>
-                  <div className="text-[11px] tracking-[0.28em] uppercase text-white/62 transition group-hover:text-white">
-                    Explore →
-                  </div>
-                </div>
-              </div>
+          <div className="mt-8">
+            <Link href="/about" className="naz-button">
+              Discover About NAZ
             </Link>
-          ))}
+          </div>
         </div>
 
-        <div className="mt-12 md:hidden">
-          <Link
-            href="/products"
-            className="text-[11px] tracking-[0.28em] uppercase text-white/55 hover:text-white transition"
-          >
-            Shop all →
-          </Link>
-        </div>
-      </section>
-
-      {/* CLOSING NOTE */}
-      <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
-        <div className="border-t border-white/10 pt-16 md:pt-20">
-          <div className="grid gap-10 md:grid-cols-12">
-            <div className="md:col-span-3">
-              <div className="text-[11px] tracking-[0.38em] uppercase text-white/35">
-                NAZ
-              </div>
-            </div>
-
-            <div className="md:col-span-9">
-              <div className="max-w-3xl text-2xl leading-[1.06] tracking-[-0.04em] text-white/82 md:text-4xl">
-                Architecture in cut.
-                <br />
-                Control in surface.
-                <br />
-                Presence in motion.
-              </div>
-            </div>
+        <div className="naz-card overflow-hidden rounded-[2rem]">
+          <div className="relative aspect-[4/5] w-full">
+            <Image
+              src="/logo.png"
+              alt="About NAZ"
+              fill
+              className="object-cover object-center opacity-90"
+            />
           </div>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 py-10 md:flex-row md:items-center">
-          <div className="text-xs tracking-[0.42em] uppercase text-white/48">
-            NAZ
-          </div>
-
-          <div className="flex items-center gap-6 text-[11px] tracking-[0.28em] uppercase text-white/34">
-            <Link href="/products" className="hover:text-white/70 transition">
-              Shop
-            </Link>
-            <Link href="/studio" className="hover:text-white/70 transition">
-              Studio
-            </Link>
-            <Link href="/about" className="hover:text-white/70 transition">
-              About
-            </Link>
-            <Link href="/contacts" className="hover:text-white/70 transition">
-              Contact
-            </Link>
-          </div>
-
-          <div className="text-xs text-white/28">© {new Date().getFullYear()}</div>
-        </div>
-      </footer>
-    </main>
+    </div>
   );
 }
