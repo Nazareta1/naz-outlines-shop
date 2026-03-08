@@ -1,6 +1,5 @@
 // app/contact/page.tsx
 
-import Navbar from "@/components/Navbar";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +7,6 @@ export const dynamic = "force-dynamic";
 export default function ContactPage() {
   return (
     <>
-      <Navbar />
 
       <main className="min-h-screen bg-black text-white">
         {/* Hero */}
