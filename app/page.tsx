@@ -102,9 +102,9 @@ export default async function HomePage() {
               >
                 <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03]">
                   <div className="relative aspect-[4/5] w-full overflow-hidden">
-                    {product.image ? (
+                    {product.imageUrl ? (
                       <Image
-                        src={product.image}
+                        src={product.imageUrl}
                         alt={product.name}
                         fill
                         className="object-cover object-center transition duration-500 group-hover:scale-[1.03]"
