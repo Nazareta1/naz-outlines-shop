@@ -13,6 +13,12 @@ function formatMoney(cents: number, currency: string) {
   return cur === "EUR" ? `€${amount}` : `${amount} ${cur}`;
 }
 
+function getProductNote(priceCents: number) {
+  if (priceCents === 12500) return "Controlled silhouette";
+  if (priceCents === 13900) return "Dark motorsport energy";
+  return "Limited production";
+}
+
 export default async function HomePage() {
   const products = await prisma.product.findMany({
     where: { active: true },
@@ -21,53 +27,51 @@ export default async function HomePage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
+    <main className="min-h-screen bg-[#0B0B0D] text-[#F2F2F2]">
       <Navbar />
 
       {/* HERO */}
-      <section className="mx-auto max-w-7xl px-6 pt-10 md:pt-14 pb-24 md:pb-32">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-end">
+      <section className="relative">
+        <div className="mx-auto grid max-w-7xl items-end gap-12 px-6 pt-12 pb-24 md:pt-16 md:pb-32 lg:grid-cols-12">
           <div className="lg:col-span-5">
-            <div className="text-[11px] tracking-[0.38em] uppercase text-white/40">
+            <div className="text-[11px] tracking-[0.42em] uppercase text-white/35">
               NAZ
             </div>
 
-            <h1 className="mt-6 text-5xl md:text-7xl leading-[0.96] tracking-[-0.04em] font-semibold text-white/95">
-              Structured
+            <h1 className="mt-8 text-5xl font-semibold leading-[0.92] tracking-[-0.05em] text-white/96 md:text-7xl xl:text-[6rem]">
+              Controlled
               <br />
-              Drop 01
+              presence
             </h1>
 
-            <p className="mt-8 max-w-md text-sm md:text-base leading-relaxed text-white/50">
-              Controlled silhouettes, engineered weight and dark motorsport energy.
+            <p className="mt-8 max-w-sm text-sm leading-relaxed text-white/48 md:text-base">
+              Structured garments shaped by weight, restraint and dark motorsport
+              energy.
             </p>
 
-            <div className="mt-10 flex items-center gap-5">
+            <div className="mt-10 flex items-center gap-6">
               <Link
                 href="/products"
-                className="inline-flex items-center justify-center border border-white/15 bg-white/[0.04] px-8 py-3 text-[11px] tracking-[0.32em] uppercase text-white/80 hover:bg-white/10 hover:text-white transition"
+                className="inline-flex items-center justify-center border border-white/15 bg-white/[0.04] px-8 py-3 text-[11px] tracking-[0.32em] uppercase text-white/82 hover:bg-white hover:text-black transition"
               >
-                Explore
+                Enter
               </Link>
 
-              <Link
-                href="/studio"
-                className="text-[11px] tracking-[0.28em] uppercase text-white/45 hover:text-white/75 transition"
-              >
-                Studio
-              </Link>
+              <div className="text-[11px] tracking-[0.28em] uppercase text-white/35">
+                Drop 01
+              </div>
             </div>
           </div>
 
           <div className="lg:col-span-7">
-            <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#141416]">
-              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.05),transparent_35%,rgba(0,0,0,0.35))]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_45%)]" />
+            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#121214]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_42%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.04),transparent_35%,rgba(0,0,0,0.42))]" />
 
-              <div className="relative aspect-[5/6] md:aspect-[16/12] w-full">
+              <div className="relative aspect-[4/5] w-full md:aspect-[16/11]">
                 <Image
                   src="/hero.jpg"
-                  alt="NAZ — Structured Drop 01"
+                  alt="NAZ"
                   fill
                   className="object-cover opacity-90"
                   sizes="(max-width: 1024px) 100vw, 58vw"
@@ -76,30 +80,30 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-4 text-[11px] tracking-[0.28em] uppercase text-white/35">
-              <span>Dark architectural showroom</span>
+            <div className="mt-4 flex items-center justify-between gap-4 text-[11px] tracking-[0.28em] uppercase text-white/32">
+              <span>Architectural showroom</span>
               <span>Controlled light</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* STATEMENT */}
+      {/* MANIFESTO */}
       <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
         <div className="border-t border-white/10 pt-16 md:pt-20">
-          <div className="max-w-3xl">
-            <div className="text-[11px] tracking-[0.35em] uppercase text-white/40">
-              Statement
+          <div className="max-w-4xl">
+            <div className="text-[11px] tracking-[0.38em] uppercase text-white/35">
+              Manifesto
             </div>
 
-            <div className="mt-6 text-3xl md:text-5xl leading-[1.02] tracking-[-0.03em] text-white/88">
+            <div className="mt-6 text-3xl leading-[1.02] tracking-[-0.04em] text-white/88 md:text-5xl">
               Built on structure.
               <br />
               Engineered for presence.
             </div>
 
-            <p className="mt-8 max-w-xl text-sm md:text-base leading-relaxed text-white/45">
-              NAZ is built around weight, restraint and silhouette. Each piece is
+            <p className="mt-8 max-w-xl text-sm leading-relaxed text-white/42 md:text-base">
+              NAZ is built around silhouette, pressure and control. Each piece is
               engineered, not decorated.
             </p>
           </div>
@@ -110,88 +114,90 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
         <div className="flex items-end justify-between gap-6 border-t border-white/10 pt-16 md:pt-20">
           <div>
-            <div className="text-[11px] tracking-[0.35em] uppercase text-white/40">
+            <div className="text-[11px] tracking-[0.38em] uppercase text-white/35">
               Drop 01
             </div>
-            <h2 className="mt-4 text-2xl md:text-4xl leading-[1.02] tracking-[-0.03em] text-white/90">
+            <h2 className="mt-5 text-2xl leading-[1.02] tracking-[-0.04em] text-white/92 md:text-4xl">
               Two pieces.
               <br />
-              One controlled direction.
+              One direction.
             </h2>
           </div>
 
           <Link
             href="/products"
-            className="hidden md:inline-flex text-[11px] tracking-[0.28em] uppercase text-white/60 hover:text-white transition"
+            className="hidden md:inline-flex text-[11px] tracking-[0.28em] uppercase text-white/55 hover:text-white transition"
           >
-            View all →
+            Shop all →
           </Link>
         </div>
 
         <div className="mt-12 grid gap-12 md:grid-cols-2">
-          {products.map((p, index) => (
+          {products.map((p) => (
             <Link key={p.id} href={`/product/${p.id}`} className="group block">
-              <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#141416]">
+              <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#121214]">
                 <div className="relative aspect-[4/5] w-full">
                   <Image
                     src={p.imageUrl || "/logo.png"}
                     alt={p.name}
                     fill
-                    className="object-contain p-10 md:p-14 opacity-90 group-hover:scale-[1.02] group-hover:opacity-100 transition duration-500"
+                    className="object-contain p-10 opacity-90 transition duration-500 group-hover:scale-[1.015] group-hover:opacity-100 md:p-14"
                     sizes="(max-width: 768px) 100vw, 48vw"
                   />
                 </div>
               </div>
 
-              <div className="mt-6 flex items-start justify-between gap-6">
-                <div>
-                  <div className="text-lg md:text-xl tracking-[-0.02em] text-white/92">
-                    {p.name}
+              <div className="mt-6">
+                <div className="flex items-start justify-between gap-6">
+                  <div>
+                    <div className="text-lg tracking-[-0.02em] text-white/92 md:text-xl">
+                      {p.name}
+                    </div>
+                    <div className="mt-2 text-[11px] tracking-[0.28em] uppercase text-white/38">
+                      {getProductNote(p.priceCents)}
+                    </div>
                   </div>
-                  <div className="mt-2 text-[11px] tracking-[0.28em] uppercase text-white/42">
-                    {index === 0 ? "Controlled silhouette" : "Dark motorsport energy"}
+
+                  <div className="text-sm text-white/72 md:text-base">
+                    {formatMoney(p.priceCents, p.currency)}
                   </div>
                 </div>
 
-                <div className="text-sm md:text-base text-white/72">
-                  {formatMoney(p.priceCents, p.currency)}
-                </div>
-              </div>
-
-              <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-5">
-                <div className="text-[11px] tracking-[0.28em] uppercase text-white/35">
-                  Smoke Black
-                </div>
-                <div className="text-[11px] tracking-[0.28em] uppercase text-white/65 group-hover:text-white transition">
-                  Explore →
+                <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-5">
+                  <div className="text-[11px] tracking-[0.28em] uppercase text-white/32">
+                    Smoke Black
+                  </div>
+                  <div className="text-[11px] tracking-[0.28em] uppercase text-white/62 transition group-hover:text-white">
+                    Explore →
+                  </div>
                 </div>
               </div>
             </Link>
           ))}
         </div>
 
-        <div className="mt-14 md:hidden">
+        <div className="mt-12 md:hidden">
           <Link
             href="/products"
-            className="inline-flex text-[11px] tracking-[0.28em] uppercase text-white/60 hover:text-white transition"
+            className="text-[11px] tracking-[0.28em] uppercase text-white/55 hover:text-white transition"
           >
-            View all →
+            Shop all →
           </Link>
         </div>
       </section>
 
-      {/* BRAND NOTE */}
+      {/* CLOSING NOTE */}
       <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
         <div className="border-t border-white/10 pt-16 md:pt-20">
-          <div className="grid md:grid-cols-12 gap-10">
-            <div className="md:col-span-4">
-              <div className="text-[11px] tracking-[0.35em] uppercase text-white/40">
+          <div className="grid gap-10 md:grid-cols-12">
+            <div className="md:col-span-3">
+              <div className="text-[11px] tracking-[0.38em] uppercase text-white/35">
                 NAZ
               </div>
             </div>
 
-            <div className="md:col-span-8">
-              <div className="max-w-2xl text-xl md:text-3xl leading-[1.1] tracking-[-0.03em] text-white/82">
+            <div className="md:col-span-9">
+              <div className="max-w-3xl text-2xl leading-[1.06] tracking-[-0.04em] text-white/82 md:text-4xl">
                 Architecture in cut.
                 <br />
                 Control in surface.
@@ -205,29 +211,27 @@ export default async function HomePage() {
 
       {/* FOOTER */}
       <footer className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-6 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="text-xs tracking-[0.35em] uppercase text-white/50">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 py-10 md:flex-row md:items-center">
+          <div className="text-xs tracking-[0.42em] uppercase text-white/48">
             NAZ
           </div>
 
-          <div className="flex items-center gap-6 text-[11px] tracking-[0.28em] uppercase text-white/38">
-            <Link href="/products" className="hover:text-white/75 transition">
+          <div className="flex items-center gap-6 text-[11px] tracking-[0.28em] uppercase text-white/34">
+            <Link href="/products" className="hover:text-white/70 transition">
               Shop
             </Link>
-            <Link href="/studio" className="hover:text-white/75 transition">
+            <Link href="/studio" className="hover:text-white/70 transition">
               Studio
             </Link>
-            <Link href="/about" className="hover:text-white/75 transition">
+            <Link href="/about" className="hover:text-white/70 transition">
               About
             </Link>
-            <Link href="/contacts" className="hover:text-white/75 transition">
+            <Link href="/contacts" className="hover:text-white/70 transition">
               Contact
             </Link>
           </div>
 
-          <div className="text-xs text-white/30">
-            © {new Date().getFullYear()}
-          </div>
+          <div className="text-xs text-white/28">© {new Date().getFullYear()}</div>
         </div>
       </footer>
     </main>
