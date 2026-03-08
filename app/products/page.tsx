@@ -2,7 +2,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import Navbar from "@/components/Navbar";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,8 +21,6 @@ export default async function ProductsPage() {
 
   return (
     <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
-      <Navbar />
-
       <section className="mx-auto max-w-6xl px-6 pt-12 pb-24">
         {/* Header */}
         <div className="flex items-end justify-between gap-6 border-b border-white/10 pb-10">
