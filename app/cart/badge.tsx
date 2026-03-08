@@ -1,24 +1,15 @@
-'use client'
+"use client";
 
-import { useCart } from './context'
+import { useCart } from "./context";
 
 export default function CartBadge() {
-  const { count } = useCart()
+  const { itemCount } = useCart();
 
-  if (count === 0) return null
+  if (itemCount === 0) return null;
 
   return (
-    <span
-      style={{
-        background: 'black',
-        color: 'white',
-        borderRadius: '999px',
-        padding: '4px 8px',
-        fontSize: '12px',
-        marginLeft: '6px',
-      }}
-    >
-      {count}
+    <span className="ml-2 inline-flex min-w-[18px] items-center justify-center rounded-full bg-white px-[6px] py-[2px] text-[10px] font-semibold text-black">
+      {itemCount}
     </span>
-  )
+  );
 }

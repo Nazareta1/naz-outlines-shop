@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CartBadge from "@/app/cart/badge";
 
 const navLinks = [
   { href: "/about", label: "About" },
@@ -41,9 +42,10 @@ export default function Navbar() {
 
           <Link
             href="/cart"
-            className="inline-flex rounded-full border border-white/15 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-200 hover:border-white/30 hover:bg-white hover:text-black"
+            className="relative inline-flex items-center rounded-full border border-white/15 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-200 hover:border-white/30 hover:bg-white hover:text-black"
           >
             Cart
+             <CartBadge />
           </Link>
         </div>
       </div>
