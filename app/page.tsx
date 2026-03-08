@@ -14,10 +14,9 @@ function formatMoney(cents: number, currency: string) {
 }
 
 export default async function HomePage() {
-  // paimam tik 2 aktyvius produktus (pirmam dropui)
   const products = await prisma.product.findMany({
     where: { active: true },
-    orderBy: { createdAt: "desc" as any }, // jei neturi createdAt, pakeisim
+    orderBy: { createdAt: "desc" },
     take: 2,
   });
 
@@ -26,120 +25,207 @@ export default async function HomePage() {
       <Navbar />
 
       {/* HERO */}
-      <section className="mx-auto max-w-6xl px-6 pt-14 md:pt-20 pb-20">
-        <div className="grid lg:grid-cols-12 gap-10 items-start">
-          <div className="lg:col-span-6">
-            <div className="text-xs tracking-[0.35em] uppercase text-white/50">
+      <section className="mx-auto max-w-7xl px-6 pt-10 md:pt-14 pb-24 md:pb-32">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-end">
+          <div className="lg:col-span-5">
+            <div className="text-[11px] tracking-[0.38em] uppercase text-white/40">
               NAZ
             </div>
 
-            <h1 className="mt-6 text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] font-semibold">
-              Structured Drop 01
+            <h1 className="mt-6 text-5xl md:text-7xl leading-[0.96] tracking-[-0.04em] font-semibold text-white/95">
+              Structured
+              <br />
+              Drop 01
             </h1>
 
-            <div className="mt-10">
+            <p className="mt-8 max-w-md text-sm md:text-base leading-relaxed text-white/50">
+              Controlled silhouettes, engineered weight and dark motorsport energy.
+            </p>
+
+            <div className="mt-10 flex items-center gap-5">
               <Link
                 href="/products"
-                className="inline-flex items-center justify-center border border-white/15 bg-white/5 px-7 py-3 text-xs tracking-[0.28em] uppercase text-white/80 hover:text-white hover:bg-white/10 transition"
+                className="inline-flex items-center justify-center border border-white/15 bg-white/[0.04] px-8 py-3 text-[11px] tracking-[0.32em] uppercase text-white/80 hover:bg-white/10 hover:text-white transition"
               >
                 Explore
+              </Link>
+
+              <Link
+                href="/studio"
+                className="text-[11px] tracking-[0.28em] uppercase text-white/45 hover:text-white/75 transition"
+              >
+                Studio
               </Link>
             </div>
           </div>
 
-          {/* HERO IMAGE */}
-          <div className="lg:col-span-6">
-            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#141416]">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] via-transparent to-black/40" />
-              <div className="relative aspect-[4/5] w-full">
-                {/* Pakeisi į savo realią hero nuotrauką */}
+          <div className="lg:col-span-7">
+            <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#141416]">
+              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.05),transparent_35%,rgba(0,0,0,0.35))]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_45%)]" />
+
+              <div className="relative aspect-[5/6] md:aspect-[16/12] w-full">
                 <Image
                   src="/hero.jpg"
                   alt="NAZ — Structured Drop 01"
                   fill
                   className="object-cover opacity-90"
-                  sizes="(max-width: 1024px) 95vw, 50vw"
+                  sizes="(max-width: 1024px) 100vw, 58vw"
                   priority
                 />
               </div>
             </div>
 
-            <div className="mt-3 text-[11px] tracking-[0.28em] uppercase text-white/40">
-              Dark architectural showroom • controlled light
+            <div className="mt-4 flex items-center justify-between gap-4 text-[11px] tracking-[0.28em] uppercase text-white/35">
+              <span>Dark architectural showroom</span>
+              <span>Controlled light</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* STATEMENT */}
-      <section className="mx-auto max-w-6xl px-6 pb-20">
-        <div className="border-t border-white/10 pt-16">
-          <div className="max-w-2xl text-2xl md:text-3xl leading-tight tracking-[-0.02em] text-white/85">
-            Built on structure.
-            <br />
-            Engineered for presence.
+      <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
+        <div className="border-t border-white/10 pt-16 md:pt-20">
+          <div className="max-w-3xl">
+            <div className="text-[11px] tracking-[0.35em] uppercase text-white/40">
+              Statement
+            </div>
+
+            <div className="mt-6 text-3xl md:text-5xl leading-[1.02] tracking-[-0.03em] text-white/88">
+              Built on structure.
+              <br />
+              Engineered for presence.
+            </div>
+
+            <p className="mt-8 max-w-xl text-sm md:text-base leading-relaxed text-white/45">
+              NAZ is built around weight, restraint and silhouette. Each piece is
+              engineered, not decorated.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* PRODUCTS (2 only) */}
-      <section className="mx-auto max-w-6xl px-6 pb-24">
-        <div className="grid gap-10 md:grid-cols-2">
-          {products.map((p) => (
-            <Link
-              key={p.id}
-              href={`/product/${p.id}`}
-              className="group"
-            >
-              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#141416]">
+      {/* PRODUCTS */}
+      <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
+        <div className="flex items-end justify-between gap-6 border-t border-white/10 pt-16 md:pt-20">
+          <div>
+            <div className="text-[11px] tracking-[0.35em] uppercase text-white/40">
+              Drop 01
+            </div>
+            <h2 className="mt-4 text-2xl md:text-4xl leading-[1.02] tracking-[-0.03em] text-white/90">
+              Two pieces.
+              <br />
+              One controlled direction.
+            </h2>
+          </div>
+
+          <Link
+            href="/products"
+            className="hidden md:inline-flex text-[11px] tracking-[0.28em] uppercase text-white/60 hover:text-white transition"
+          >
+            View all →
+          </Link>
+        </div>
+
+        <div className="mt-12 grid gap-12 md:grid-cols-2">
+          {products.map((p, index) => (
+            <Link key={p.id} href={`/product/${p.id}`} className="group block">
+              <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#141416]">
                 <div className="relative aspect-[4/5] w-full">
                   <Image
                     src={p.imageUrl || "/logo.png"}
                     alt={p.name}
                     fill
-                    className="object-contain p-10 opacity-90 group-hover:opacity-100 transition"
-                    sizes="(max-width: 768px) 95vw, 45vw"
+                    className="object-contain p-10 md:p-14 opacity-90 group-hover:scale-[1.02] group-hover:opacity-100 transition duration-500"
+                    sizes="(max-width: 768px) 100vw, 48vw"
                   />
                 </div>
               </div>
 
-              <div className="mt-5 flex items-start justify-between gap-4">
+              <div className="mt-6 flex items-start justify-between gap-6">
                 <div>
-                  <div className="text-sm tracking-[0.08em] text-white/90">
+                  <div className="text-lg md:text-xl tracking-[-0.02em] text-white/92">
                     {p.name}
                   </div>
-                  <div className="mt-1 text-[11px] tracking-[0.28em] uppercase text-white/45">
-                    Smoke Black
+                  <div className="mt-2 text-[11px] tracking-[0.28em] uppercase text-white/42">
+                    {index === 0 ? "Controlled silhouette" : "Dark motorsport energy"}
                   </div>
                 </div>
-                <div className="text-sm text-white/70">
+
+                <div className="text-sm md:text-base text-white/72">
                   {formatMoney(p.priceCents, p.currency)}
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-5">
+                <div className="text-[11px] tracking-[0.28em] uppercase text-white/35">
+                  Smoke Black
+                </div>
+                <div className="text-[11px] tracking-[0.28em] uppercase text-white/65 group-hover:text-white transition">
+                  Explore →
                 </div>
               </div>
             </Link>
           ))}
         </div>
 
-        <div className="mt-14 border-t border-white/10 pt-10 flex items-center justify-between">
-          <div className="text-[11px] tracking-[0.28em] uppercase text-white/40">
-            Limited production
-          </div>
+        <div className="mt-14 md:hidden">
           <Link
             href="/products"
-            className="text-[11px] tracking-[0.28em] uppercase text-white/70 hover:text-white transition"
+            className="inline-flex text-[11px] tracking-[0.28em] uppercase text-white/60 hover:text-white transition"
           >
-            View all
+            View all →
           </Link>
         </div>
       </section>
 
-      {/* FOOTER minimal */}
+      {/* BRAND NOTE */}
+      <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
+        <div className="border-t border-white/10 pt-16 md:pt-20">
+          <div className="grid md:grid-cols-12 gap-10">
+            <div className="md:col-span-4">
+              <div className="text-[11px] tracking-[0.35em] uppercase text-white/40">
+                NAZ
+              </div>
+            </div>
+
+            <div className="md:col-span-8">
+              <div className="max-w-2xl text-xl md:text-3xl leading-[1.1] tracking-[-0.03em] text-white/82">
+                Architecture in cut.
+                <br />
+                Control in surface.
+                <br />
+                Presence in motion.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
       <footer className="border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-6 py-10 flex items-center justify-between">
+        <div className="mx-auto max-w-7xl px-6 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="text-xs tracking-[0.35em] uppercase text-white/50">
             NAZ
           </div>
-          <div className="text-xs text-white/35">
+
+          <div className="flex items-center gap-6 text-[11px] tracking-[0.28em] uppercase text-white/38">
+            <Link href="/products" className="hover:text-white/75 transition">
+              Shop
+            </Link>
+            <Link href="/studio" className="hover:text-white/75 transition">
+              Studio
+            </Link>
+            <Link href="/about" className="hover:text-white/75 transition">
+              About
+            </Link>
+            <Link href="/contacts" className="hover:text-white/75 transition">
+              Contact
+            </Link>
+          </div>
+
+          <div className="text-xs text-white/30">
             © {new Date().getFullYear()}
           </div>
         </div>
