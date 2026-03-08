@@ -1,12 +1,10 @@
 // app/contacts/page.tsx
-import Navbar from "@/components/Navbar";
 
 export const dynamic = "force-dynamic";
 
 export default function ContactsPage() {
   return (
     <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
-      <Navbar />
 
       <section className="mx-auto max-w-6xl px-6 pt-12 pb-24">
         <div className="border-b border-white/10 pb-10">
