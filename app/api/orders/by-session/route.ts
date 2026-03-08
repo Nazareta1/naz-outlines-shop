@@ -1,28 +1,28 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get("session_id");
 
   if (!sessionId) {
-    return NextResponse.json(
-      { error: "Missing session_id" },
-      { status: 400 }
-    );
+    return Response.json({ error: "Missing session_id" }, { status: 400 });
   }
 
   const order = await prisma.order.findUnique({
     where: { stripeSessionId: sessionId },
-    include: { items: true },
+    include: {
+      items: {
+        orderBy: { createdAt: "asc" },
+      },
+    },
   });
 
   if (!order) {
-    return NextResponse.json(
-      { error: "Order not found" },
-      { status: 404 }
-    );
+    return Response.json({ error: "Order not found" }, { status: 404 });
   }
 
-  return NextResponse.json(order);
+  return Response.json({ order });
 }

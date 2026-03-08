@@ -1,25 +1,21 @@
-import { Suspense } from "react";
-import Navbar from "@/components/Navbar";
+import type { Metadata } from "next";
 import SuccessContent from "./SuccessContent";
 
-export default function SuccessPage() {
+export const metadata: Metadata = {
+  title: "Order Confirmed",
+  description: "Your NAZ order has been successfully placed.",
+};
+
+export default async function CheckoutSuccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session_id?: string }>;
+}) {
+  const { session_id } = await searchParams;
+
   return (
-    <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
-      <Navbar />
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-6xl px-6 pt-12 pb-24">
-            <div className="border border-white/10 bg-[#141416] rounded-[28px] p-10">
-              <div className="text-xs tracking-[0.35em] uppercase text-white/45">
-                Loading
-              </div>
-              <div className="mt-4 text-white/60">Retrieving session.</div>
-            </div>
-          </div>
-        }
-      >
-        <SuccessContent />
-      </Suspense>
-    </main>
+    <div className="container-naz py-12 pb-20 md:py-16 md:pb-24">
+      <SuccessContent sessionId={session_id} />
+    </div>
   );
 }
