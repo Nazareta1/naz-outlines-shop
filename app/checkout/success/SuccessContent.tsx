@@ -56,7 +56,7 @@ export default function SuccessContent({
     async function loadOrder() {
       try {
         const res = await fetch(
-          `/api/orders/by-session?session_id=${encodeURIComponent(sessionId)}`,
+          `/api/orders/by-session?session_id=${encodeURIComponent(sessionId ?? "")}`,
           {
             cache: "no-store",
           }
