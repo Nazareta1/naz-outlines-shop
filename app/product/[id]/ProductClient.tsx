@@ -8,11 +8,16 @@ import { useMemo, useState } from "react";
 
 type Size = "S" | "M" | "L";
 
+function formatMoney(cents: number, currency: string) {
+  const amount = (cents / 100).toFixed(2);
+  const cur = (currency || "EUR").toUpperCase();
+  return cur === "EUR" ? `€${amount}` : `${amount} ${cur}`;
+}
+
 export default function ProductClient({
   product,
   specs,
   gallery,
-  formatMoney,
 }: {
   product: {
     id: string;
@@ -29,7 +34,6 @@ export default function ProductClient({
     energy: string;
   };
   gallery: string[];
-  formatMoney: (cents: number, currency: string) => string;
 }) {
   const [selectedSize, setSelectedSize] = useState<Size>("S");
 
@@ -40,7 +44,6 @@ export default function ProductClient({
       <Navbar />
 
       <section className="mx-auto max-w-7xl px-6 pt-12 pb-28">
-        {/* Back */}
         <div className="mb-10">
           <Link
             href="/products"
@@ -51,10 +54,8 @@ export default function ProductClient({
         </div>
 
         <div className="grid lg:grid-cols-12 gap-14 items-start">
-          {/* LEFT — GALLERY */}
           <div className="lg:col-span-7">
             <div className="grid gap-4">
-              {/* Main image */}
               <div className="relative aspect-[4/5] rounded-[32px] overflow-hidden border border-white/10 bg-[#141416]">
                 <Image
                   src={gallery[0]}
@@ -65,14 +66,12 @@ export default function ProductClient({
                 />
               </div>
 
-              {/* Thumbnails */}
               <div className="grid grid-cols-3 gap-4">
                 {gallery.slice(1).map((g, i) => (
                   <button
                     key={i}
                     type="button"
-                    className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 bg-[#141416] focus:outline-none focus:ring-2 focus:ring-white/20"
-                    // placeholder: vėliau galėsim padaryti click keisti main image
+                    className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 bg-[#141416]"
                     onClick={() => {}}
                     aria-label={`Gallery image ${i + 2}`}
                   >
@@ -88,7 +87,6 @@ export default function ProductClient({
             </div>
           </div>
 
-          {/* RIGHT — INFO */}
           <div className="lg:col-span-5">
             <div className="border border-white/10 bg-[#141416] rounded-[32px] p-10">
               <div className="text-xs tracking-[0.35em] uppercase text-white/45">
@@ -108,7 +106,6 @@ export default function ProductClient({
                 </div>
               </div>
 
-              {/* Engineered description */}
               <div className="mt-8 text-sm leading-relaxed text-white/60">
                 {specs.gsm}.
                 <br />
@@ -117,7 +114,6 @@ export default function ProductClient({
                 {specs.energy}.
               </div>
 
-              {/* SPECS BLOCK */}
               <div className="mt-10 border-t border-white/10 pt-8 grid gap-4 text-xs text-white/55">
                 <SpecRow label="Weight" value={specs.gsm} />
                 <SpecRow label="Composition" value={specs.composition} />
@@ -125,7 +121,6 @@ export default function ProductClient({
                 <SpecRow label="Colour" value="Smoke Black" />
               </div>
 
-              {/* SIZE */}
               <div className="mt-10">
                 <div className="text-xs tracking-[0.28em] uppercase text-white/45">
                   Size
@@ -154,12 +149,11 @@ export default function ProductClient({
                 </div>
               </div>
 
-              {/* CTA */}
               <div className="mt-12 grid gap-4">
                 <AddToCartButton
                   product={{
                     id: product.id,
-                    name: specs.subtitle,
+                    name: product.name,
                     priceCents: product.priceCents,
                     currency: product.currency,
                     imageUrl: product.imageUrl,
@@ -207,7 +201,9 @@ export default function ProductClient({
 function SpecRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span className="tracking-[0.28em] uppercase text-white/45">{label}</span>
+      <span className="tracking-[0.28em] uppercase text-white/45">
+        {label}
+      </span>
       <span className="text-white/65">{value}</span>
     </div>
   );
