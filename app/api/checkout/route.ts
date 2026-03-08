@@ -68,7 +68,9 @@ export async function POST(req: Request) {
 
       if (product.priceCents !== item.priceCents) {
         return Response.json(
-          { error: `Price changed for ${product.name}. Please refresh your cart.` },
+          {
+            error: `Price changed for ${product.name}. Please refresh your cart.`,
+          },
           { status: 400 }
         );
       }
@@ -112,6 +114,7 @@ export async function POST(req: Request) {
       },
     });
 
+    // STRIPE LINE ITEMS
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
       (item) => ({
         quantity: item.quantity,
@@ -120,15 +123,13 @@ export async function POST(req: Request) {
           unit_amount: item.priceCents,
           product_data: {
             name: `${item.name} / ${item.size}`,
-            images: item.imageUrl ? [item.imageUrl] : undefined,
           },
         },
       })
     );
 
     const origin =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      new URL(req.url).origin;
+      process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -148,6 +149,10 @@ export async function POST(req: Request) {
       },
     });
 
+    if (!session.url) {
+      throw new Error("Stripe session URL missing");
+    }
+
     await prisma.order.update({
       where: { id: order.id },
       data: {
@@ -158,8 +163,12 @@ export async function POST(req: Request) {
     return Response.json({ url: session.url });
   } catch (error) {
     console.error("Checkout error:", error);
+
     return Response.json(
-      { error: "Unable to start checkout." },
+      {
+        error:
+          error instanceof Error ? error.message : "Unable to start checkout.",
+      },
       { status: 500 }
     );
   }
