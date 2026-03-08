@@ -1,56 +1,64 @@
 import Link from "next/link";
 
+const navLinks = [
+  { href: "/about", label: "About" },
+  { href: "/products", label: "Shop" },
+  { href: "/contacts", label: "Contact" },
+];
+
 export default function Navbar() {
   return (
-    <header className="relative z-30">
-      <div className="mx-auto max-w-7xl px-6 pt-6 md:pt-8">
-        <nav className="flex items-center justify-between border-b border-white/10 pb-5">
-          {/* LEFT */}
-          <div className="flex items-center gap-10">
-            <Link
-              href="/"
-              className="text-xs tracking-[0.42em] uppercase text-white/92 hover:text-white transition"
-            >
-              NAZ
-            </Link>
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur-xl">
+      <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-10">
+          <Link
+            href="/"
+            className="tracking-[0.35em] text-sm font-semibold uppercase text-white transition-opacity duration-200 hover:opacity-80"
+          >
+            NAZ
+          </Link>
 
-            <div className="hidden md:flex items-center gap-6">
+          <nav className="hidden items-center gap-8 md:flex">
+            {navLinks.map((link) => (
               <Link
-                href="/products"
-                className="text-[11px] tracking-[0.3em] uppercase text-white/48 hover:text-white transition"
+                key={link.href}
+                href={link.href}
+                className="text-sm uppercase tracking-[0.2em] text-white/70 transition-colors duration-200 hover:text-white"
               >
-                Shop
+                {link.label}
               </Link>
-              <Link
-                href="/studio"
-                className="text-[11px] tracking-[0.3em] uppercase text-white/48 hover:text-white transition"
-              >
-                Studio
-              </Link>
-              <Link
-                href="/about"
-                className="text-[11px] tracking-[0.3em] uppercase text-white/48 hover:text-white transition"
-              >
-                About
-              </Link>
-              <Link
-                href="/contacts"
-                className="text-[11px] tracking-[0.3em] uppercase text-white/48 hover:text-white transition"
-              >
-                Contact
-              </Link>
-            </div>
-          </div>
+            ))}
+          </nav>
+        </div>
 
-          {/* RIGHT */}
-          <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            href="/products"
+            className="hidden rounded-full border border-white/15 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white/80 transition-all duration-200 hover:border-white/30 hover:text-white sm:inline-flex"
+          >
+            New Drop
+          </Link>
+
+          <Link
+            href="/cart"
+            className="inline-flex rounded-full border border-white/15 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-200 hover:border-white/30 hover:bg-white hover:text-black"
+          >
+            Cart
+          </Link>
+        </div>
+      </div>
+
+      <div className="border-t border-white/5 md:hidden">
+        <nav className="mx-auto flex max-w-7xl items-center justify-center gap-6 px-4 py-3">
+          {navLinks.map((link) => (
             <Link
-              href="/cart"
-              className="text-[11px] tracking-[0.3em] uppercase text-white/58 hover:text-white transition"
+              key={link.href}
+              href={link.href}
+              className="text-[11px] uppercase tracking-[0.22em] text-white/70 transition-colors duration-200 hover:text-white"
             >
-              Cart
+              {link.label}
             </Link>
-          </div>
+          ))}
         </nav>
       </div>
     </header>

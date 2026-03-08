@@ -1,21 +1,59 @@
-// app/layout.tsx
-import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { CartProvider } from "@/app/cart/context";
-
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+import "./globals.css";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "NAZ — Structured Drop 01",
-  description: "Engineered for presence.",
+  title: {
+    default: "NAZ",
+    template: "%s | NAZ",
+  },
+  description:
+    "NAZ is a luxury streetwear label shaped by presence, elegance, and motorsport-inspired energy.",
+  keywords: [
+    "NAZ",
+    "luxury streetwear",
+    "motorsport clothing",
+    "premium hoodie",
+    "designer streetwear",
+    "oversized hoodie",
+  ],
+  openGraph: {
+    title: "NAZ",
+    description:
+      "Luxury streetwear shaped by presence, elegance, and motorsport-inspired energy.",
+    type: "website",
+    siteName: "NAZ",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NAZ",
+    description:
+      "Luxury streetwear shaped by presence, elegance, and motorsport-inspired energy.",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en" className="bg-[#0E0E10]">
-      <body className={`${inter.className} bg-[#0E0E10] text-[#F2F2F2] antialiased`}>
-        <CartProvider>{children}</CartProvider>
+    <html lang="en">
+      <body>
+        <Providers>
+          <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+            <Navbar />
+            <main>{children}</main>
+            <Footer />
+          </div>
+        </Providers>
       </body>
     </html>
   );
