@@ -4,7 +4,7 @@ import CartBadge from "@/app/cart/badge";
 const navLinks = [
   { href: "/about", label: "About" },
   { href: "/products", label: "Shop" },
-  { href: "/contacts", label: "Contact" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export default function Navbar() {
