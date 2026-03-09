@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import OrderConfirmationEmail from "@/lib/emails/orderConfirmation";
+import { resend, EMAIL_FROM } from "@/lib/resend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,6 +83,88 @@ async function decrementStockForItem(
   throw new Error(`Unsupported size ${item.size}`);
 }
 
+function formatMoneyText(cents: number, currency = "EUR") {
+  const amount = cents / 100;
+
+  try {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency.toUpperCase()}`;
+  }
+}
+
+async function sendOrderConfirmationEmail(order: {
+  id: string;
+  email: string | null;
+  name: string | null;
+  totalCents: number;
+  currency: string | null;
+  items: Array<{
+    quantity: number;
+    size: string | null;
+    price: number;
+    product: {
+      name: string;
+    };
+  }>;
+}) {
+  if (!order.email) {
+    console.warn("Skipping order confirmation email: missing customer email", order.id);
+    return;
+  }
+
+  const currency = (order.currency || "EUR").toUpperCase();
+
+  const itemsForEmail = order.items.map((item) => ({
+    name: item.product.name,
+    size: item.size,
+    quantity: item.quantity,
+    price: item.price,
+  }));
+
+  const textItems =
+    itemsForEmail.length > 0
+      ? itemsForEmail
+          .map(
+            (item) =>
+              `- ${item.name} | Size: ${item.size || "-"} | Qty: ${item.quantity}${
+                item.price != null ? ` | ${formatMoneyText(item.price, currency)}` : ""
+              }`
+          )
+          .join("\n")
+      : "No items listed.";
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to: order.email,
+    subject: "NAZ — Order Confirmed",
+    react: OrderConfirmationEmail({
+      customerName: order.name,
+      orderNumber: order.id,
+      customerEmail: order.email,
+      total: order.totalCents,
+      currency,
+      items: itemsForEmail,
+    }),
+    text: `NAZ — Order Confirmed
+
+Order #${order.id}
+Email: ${order.email}
+Total: ${formatMoneyText(order.totalCents, currency)}
+
+Items:
+${textItems}
+
+Your NAZ piece is now in motion.
+We will send you another update as soon as your order is shipped.
+
+go NAZ — win your own race`,
+  });
+}
+
 async function handlePaidCheckout(
   session: Stripe.Checkout.Session,
   stripeEventId: string
@@ -91,21 +175,31 @@ async function handlePaidCheckout(
     (orderId
       ? await prisma.order.findUnique({
           where: { id: orderId },
-          include: { items: true },
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
         })
       : null) ||
     (await prisma.order.findUnique({
       where: { stripeSessionId: session.id },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
     }));
 
-  // Neradus order negrąžinam klaidos Stripe'ui – tiesiog užlogginam
   if (!order) {
     console.warn("Webhook: order not found for session", session.id);
     return;
   }
 
-  // Idempotency – jei jau apdorotas, nieko nebedarom
   if (
     order.lastStripeEventId === stripeEventId ||
     order.paymentStatus === "paid"
@@ -119,7 +213,9 @@ async function handlePaidCheckout(
   await prisma.$transaction(async (tx) => {
     const freshOrder = await tx.order.findUnique({
       where: { id: order.id },
-      include: { items: true },
+      include: {
+        items: true,
+      },
     });
 
     if (!freshOrder) {
@@ -173,6 +269,38 @@ async function handlePaidCheckout(
       },
     });
   });
+
+  const paidOrder = await prisma.order.findUnique({
+    where: { id: order.id },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  if (!paidOrder) {
+    console.warn("Webhook: paid order not found after update", order.id);
+    return;
+  }
+
+  await sendOrderConfirmationEmail({
+    id: paidOrder.id,
+    email: paidOrder.email,
+    name: paidOrder.name,
+    totalCents: paidOrder.totalCents,
+    currency: paidOrder.currency,
+    items: paidOrder.items.map((item) => ({
+      quantity: item.quantity,
+      size: item.size,
+      priceCents: item.priceCents,
+      product: {
+        name: item.product.name,
+      },
+    })),
+  });
 }
 
 export async function POST(req: Request) {
@@ -211,7 +339,6 @@ export async function POST(req: Request) {
         break;
       }
 
-      // Šitą eventą tiesiog priimam, bet nieko nedarom
       case "payment_intent.succeeded": {
         break;
       }
