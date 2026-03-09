@@ -295,7 +295,7 @@ async function handlePaidCheckout(
     items: paidOrder.items.map((item) => ({
       quantity: item.quantity,
       size: item.size,
-      priceCents: item.priceCents,
+      price: item.priceCents,
       product: {
         name: item.product.name,
       },
