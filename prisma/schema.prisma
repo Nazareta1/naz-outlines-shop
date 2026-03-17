@@ -90,3 +90,16 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
 }
+model PrivateAccessToken {
+  id         String   @id @default(cuid())
+  email      String
+  token      String   @unique
+  dropSlug   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([email])
+  @@index([dropSlug])
+  @@index([token])
+}
