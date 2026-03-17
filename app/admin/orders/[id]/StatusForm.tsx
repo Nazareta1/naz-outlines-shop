@@ -9,6 +9,7 @@ const FULFILLMENT_STATUSES = [
   "fulfilled",
   "shipped",
   "cancelled",
+  "delivered",
 ] as const;
 
 type Props = {
