@@ -102,17 +102,29 @@ async function sendOrderConfirmationEmail(order: {
   name: string | null;
   totalCents: number;
   currency: string | null;
+  confirmationEmailSentAt: Date | null;
   items: Array<{
     quantity: number;
     size: string | null;
-    price: number;
+    priceCents: number;
     product: {
       name: string;
     };
   }>;
 }) {
   if (!order.email) {
-    console.warn("Skipping order confirmation email: missing customer email", order.id);
+    console.warn(
+      "Skipping order confirmation email: missing customer email",
+      order.id
+    );
+    return;
+  }
+
+  if (order.confirmationEmailSentAt) {
+    console.log(
+      "Skipping order confirmation email: already sent for order",
+      order.id
+    );
     return;
   }
 
@@ -122,7 +134,7 @@ async function sendOrderConfirmationEmail(order: {
     name: item.product.name,
     size: item.size,
     quantity: item.quantity,
-    price: item.price,
+    price: item.priceCents,
   }));
 
   const textItems =
@@ -130,14 +142,17 @@ async function sendOrderConfirmationEmail(order: {
       ? itemsForEmail
           .map(
             (item) =>
-              `- ${item.name} | Size: ${item.size || "-"} | Qty: ${item.quantity}${
-                item.price != null ? ` | ${formatMoneyText(item.price, currency)}` : ""
-              }`
+              `- ${item.name} | Size: ${item.size || "-"} | Qty: ${item.quantity} | ${formatMoneyText(
+                item.price ?? 0,
+                currency
+              )}`
           )
           .join("\n")
       : "No items listed.";
 
-  await resend.emails.send({
+  console.log("Sending order confirmation email for order:", order.id);
+
+  const result = await resend.emails.send({
     from: EMAIL_FROM,
     to: order.email,
     subject: "NAZ — Order Confirmed",
@@ -162,6 +177,15 @@ Your NAZ piece is now in motion.
 We will send you another update as soon as your order is shipped.
 
 go NAZ — win your own race`,
+  });
+
+  console.log("Resend result:", result);
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      confirmationEmailSentAt: new Date(),
+    },
   });
 }
 
@@ -201,9 +225,10 @@ async function handlePaidCheckout(
   }
 
   if (
-    order.lastStripeEventId === stripeEventId ||
-    order.paymentStatus === "paid"
+    order.lastStripeEventId === stripeEventId &&
+    order.confirmationEmailSentAt
   ) {
+    console.log("Webhook already fully handled for order:", order.id);
     return;
   }
 
@@ -223,18 +248,21 @@ async function handlePaidCheckout(
     }
 
     if (
-      freshOrder.lastStripeEventId === stripeEventId ||
-      freshOrder.paymentStatus === "paid"
+      freshOrder.lastStripeEventId === stripeEventId &&
+      freshOrder.confirmationEmailSentAt
     ) {
+      console.log("Fresh order already fully handled:", freshOrder.id);
       return;
     }
 
-    for (const item of freshOrder.items) {
-      await decrementStockForItem(tx, {
-        productId: item.productId,
-        quantity: item.quantity,
-        size: item.size,
-      });
+    if (freshOrder.paymentStatus !== "paid") {
+      for (const item of freshOrder.items) {
+        await decrementStockForItem(tx, {
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.size,
+        });
+      }
     }
 
     await tx.order.update({
@@ -286,16 +314,24 @@ async function handlePaidCheckout(
     return;
   }
 
+  console.log(
+    "Paid order loaded for email:",
+    paidOrder.id,
+    paidOrder.email,
+    paidOrder.confirmationEmailSentAt
+  );
+
   await sendOrderConfirmationEmail({
     id: paidOrder.id,
     email: paidOrder.email,
     name: paidOrder.name,
     totalCents: paidOrder.totalCents,
     currency: paidOrder.currency,
+    confirmationEmailSentAt: paidOrder.confirmationEmailSentAt,
     items: paidOrder.items.map((item) => ({
       quantity: item.quantity,
       size: item.size,
-      price: item.priceCents,
+      priceCents: item.priceCents,
       product: {
         name: item.product.name,
       },
