@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import StatusForm from "./StatusForm";
 import ShippingForm from "./ShippingForm";
 
-export const runtime = "nodejs"; // ✅ Prisma needs Node runtime on Vercel
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function formatMoney(cents: number, currency: string) {
@@ -26,6 +26,7 @@ function statusBadge(status: string) {
   if (s === "unfulfilled") return "bg-slate-100 text-slate-800 border-slate-200";
   if (s === "fulfilled") return "bg-blue-100 text-blue-800 border-blue-200";
   if (s === "shipped") return "bg-purple-100 text-purple-800 border-purple-200";
+  if (s === "delivered") return "bg-emerald-100 text-emerald-800 border-emerald-200";
   if (s === "cancelled") return "bg-zinc-100 text-zinc-800 border-zinc-200";
 
   return "bg-slate-100 text-slate-800 border-slate-200";
@@ -78,17 +79,16 @@ export default async function AdminOrderDetailPage({
 
     return (
       <div className="max-w-5xl mx-auto p-6 md:p-10">
-        <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <Link
             href="/admin/orders"
-            className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+            className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 w-fit"
           >
             ← Back
           </Link>
 
-          {/* ✅ 2 statusai: Payment + Fulfillment */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+            <div className="flex items-center gap-3 flex-wrap">
               <span
                 className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
                   order.paymentStatus
@@ -104,7 +104,7 @@ export default async function AdminOrderDetailPage({
               />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span
                 className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
                   order.fulfillmentStatus
@@ -122,7 +122,6 @@ export default async function AdminOrderDetailPage({
           </div>
         </div>
 
-        {/* Main card */}
         <div className="border rounded-2xl shadow-sm bg-white p-6 mb-6">
           <h1 className="text-2xl font-bold mb-2">Order {order.id}</h1>
           <div className="text-sm text-gray-600">
@@ -158,6 +157,30 @@ export default async function AdminOrderDetailPage({
                 </div>
                 <div>{order.region || "—"}</div>
                 <div>{order.country || "—"}</div>
+              </div>
+
+              <h2 className="text-lg font-semibold mt-6 mb-2">
+                NAZ Private Access
+              </h2>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>
+                  <span className="text-gray-500">Access:</span>{" "}
+                  {order.nazPrivateAccess ? "Granted" : "Not granted"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Granted at:</span>{" "}
+                  {order.nazPrivateAccessGrantedAt
+                    ? new Date(order.nazPrivateAccessGrantedAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Access email sent:</span>{" "}
+                  {order.nazPrivateAccessEmailSentAt
+                    ? new Date(
+                        order.nazPrivateAccessEmailSentAt
+                      ).toLocaleString()
+                    : "—"}
+                </div>
               </div>
             </div>
 
@@ -197,21 +220,72 @@ export default async function AdminOrderDetailPage({
                   <span>{formatMoney(order.totalCents, order.currency)}</span>
                 </div>
               </div>
+
+              <h2 className="text-lg font-semibold mt-6 mb-2">
+                Fulfillment timeline
+              </h2>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>
+                  <span className="text-gray-500">Carrier:</span>{" "}
+                  {order.shippingCarrier || "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Tracking number:</span>{" "}
+                  {order.trackingNumber || "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Tracking URL:</span>{" "}
+                  {order.trackingUrl ? (
+                    <a
+                      href={order.trackingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline break-all"
+                    >
+                      Open tracking
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+                <div>
+                  <span className="text-gray-500">Shipped at:</span>{" "}
+                  {order.shippedAt
+                    ? new Date(order.shippedAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Shipping email sent:</span>{" "}
+                  {order.shippingEmailSentAt
+                    ? new Date(order.shippingEmailSentAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Delivered at:</span>{" "}
+                  {order.deliveredAt
+                    ? new Date(order.deliveredAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Delivered email sent:</span>{" "}
+                  {order.deliveredEmailSentAt
+                    ? new Date(order.deliveredEmailSentAt).toLocaleString()
+                    : "—"}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ✅ Shipping tracking form */}
         <div className="mb-6">
           <ShippingForm
             orderId={order.id}
-            initialCarrier={(order as any).shippingCarrier}
-            initialTracking={(order as any).trackingNumber}
+            initialCarrier={order.shippingCarrier}
+            initialTracking={order.trackingNumber}
             initialFulfillmentStatus={order.fulfillmentStatus}
           />
         </div>
 
-        {/* Items table */}
         <div className="border rounded-2xl shadow-sm bg-white p-6">
           <h2 className="text-xl font-bold mb-4">Items</h2>
 
@@ -235,6 +309,9 @@ export default async function AdminOrderDetailPage({
                       </div>
                       <div className="text-xs text-gray-500">
                         Product ID: {item.productId}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Size: {item.size || "—"}
                       </div>
                     </td>
                     <td className="p-3">{item.quantity}</td>
