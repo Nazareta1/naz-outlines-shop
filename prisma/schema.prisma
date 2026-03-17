@@ -16,7 +16,6 @@ model Product {
   imageUrl    String?
   active      Boolean @default(true)
 
-  // ✅ Stock per size (default 10)
   stockS Int @default(10)
   stockM Int @default(10)
   stockL Int @default(10)
@@ -82,7 +81,7 @@ model OrderItem {
   name       String
   priceCents Int
   quantity   Int
-  size       String? // ✅ store size on item (optional, but recommended)
+  size       String?
   createdAt  DateTime @default(now())
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)

@@ -13,6 +13,7 @@ type OrderShippedEmailProps = {
   trackingUrl?: string | null;
   customerEmail: string;
   items?: OrderItem[];
+  carrier?: string | null; // 
 };
 
 export default function OrderShippedEmail({

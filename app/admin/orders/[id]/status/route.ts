@@ -141,11 +141,9 @@ function nazPrivateAccessEmailHtml({
 
             <p style="margin:18px 0 0;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.75);">
               ${customerName ? `Thank you, ${customerName}. ` : ""}
-              You are now part of a selected group that will be informed first
-              about future drops.
+              You are now part of a selected group that will be informed first about future drops.
               <br /><br />
-              Before the next public release, you will receive early access and
-              be able to view and order the next drop ahead of everyone else.
+              Before the next public release, you will receive early access and be able to view and order the next drop ahead of everyone else.
             </p>
           </div>
 
@@ -199,7 +197,7 @@ async function sendShippedEmail(order: {
   name: string | null;
   trackingNumber?: string | null;
   trackingUrl?: string | null;
-  carrier?: string | null;
+  shippingCarrier?: string | null;
   items: Array<{
     quantity: number;
     size: string | null;
@@ -240,13 +238,13 @@ async function sendShippedEmail(order: {
       trackingUrl: order.trackingUrl || null,
       customerEmail: order.email,
       items: itemsForEmail,
-      carrier: order.carrier || null,
+      carrier: order.shippingCarrier || null,
     }),
     text: `NAZ — Your order is on the way
 
 Order #${order.id}
 Email: ${order.email}
-Carrier: ${order.carrier || "-"}
+Carrier: ${order.shippingCarrier || "-"}
 Tracking number: ${order.trackingNumber || "Tracking activates shortly"}
 ${order.trackingUrl ? `Tracking link: ${order.trackingUrl}` : ""}
 
@@ -335,7 +333,7 @@ async function evaluateNazPrivateAccess(order: {
 
   const email = order.email.toLowerCase().trim();
 
-  const existingVipOrder = await prisma.order.findFirst({
+  const existingAccessOrder = await prisma.order.findFirst({
     where: {
       email,
       nazPrivateAccess: true,
@@ -347,14 +345,14 @@ async function evaluateNazPrivateAccess(order: {
     },
   });
 
-  if (existingVipOrder) {
+  if (existingAccessOrder) {
     if (!order.nazPrivateAccess) {
       await prisma.order.update({
         where: { id: order.id },
         data: {
           nazPrivateAccess: true,
           nazPrivateAccessGrantedAt:
-            existingVipOrder.nazPrivateAccessGrantedAt ?? new Date(),
+            existingAccessOrder.nazPrivateAccessGrantedAt ?? new Date(),
         },
       });
     }
@@ -505,7 +503,7 @@ export async function PATCH(
         name: true,
         trackingNumber: true,
         trackingUrl: true,
-        carrier: true,
+        shippingCarrier: true,
         shippingEmailSentAt: true,
         deliveredEmailSentAt: true,
         nazPrivateAccess: true,
@@ -534,7 +532,7 @@ export async function PATCH(
         name: orderWithItems.name,
         trackingNumber: orderWithItems.trackingNumber,
         trackingUrl: orderWithItems.trackingUrl,
-        carrier: orderWithItems.carrier,
+        shippingCarrier: orderWithItems.shippingCarrier,
         items: orderWithItems.items.map((item) => ({
           quantity: item.quantity,
           size: item.size,
