@@ -43,14 +43,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
+
       if (raw) {
         const parsed = JSON.parse(raw) as CartItem[];
+
         if (Array.isArray(parsed)) {
-          setItems(parsed);
+          setItems(
+            parsed.filter(
+              (item) =>
+                item &&
+                typeof item.id === "string" &&
+                typeof item.name === "string" &&
+                typeof item.priceCents === "number" &&
+                typeof item.currency === "string" &&
+                (item.size === "S" || item.size === "M" || item.size === "L") &&
+                typeof item.quantity === "number" &&
+                item.quantity > 0
+            )
+          );
         }
       }
     } catch {
-      // ignore broken localStorage data
+      // ignore invalid localStorage data
     } finally {
       setHydrated(true);
     }
@@ -79,7 +93,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      return [...prev, item];
+      return [...prev, { ...item, quantity: Math.max(1, item.quantity) }];
     });
   }
 
@@ -144,8 +158,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 export function useCart() {
   const ctx = useContext(CartContext);
+
   if (!ctx) {
     throw new Error("useCart must be used inside CartProvider");
   }
+
   return ctx;
 }

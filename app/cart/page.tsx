@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCart } from "./context";
 
 function formatMoney(cents: number, currency: string) {
@@ -22,12 +22,19 @@ export default function CartPage() {
   } = useCart();
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const totalPieces = useMemo(
+    () => items.reduce((sum, item) => sum + item.quantity, 0),
+    [items]
+  );
 
   async function handleCheckout() {
     if (items.length === 0) return;
 
     try {
       setLoading(true);
+      setError("");
 
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -40,15 +47,17 @@ export default function CartPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Checkout failed.");
+        setError(data.error || "Unable to start checkout. Please try again.");
         return;
       }
 
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        setError("Unable to start checkout. Please try again.");
       }
     } catch {
-      alert("Something went wrong while starting checkout.");
+      setError("Something went wrong while starting checkout.");
     } finally {
       setLoading(false);
     }
@@ -59,18 +68,36 @@ export default function CartPage() {
       <div className="mb-8">
         <p className="naz-eyebrow mb-4">Cart</p>
         <h1 className="naz-heading-lg text-white">Your selection</h1>
+        <p className="mt-4 max-w-2xl text-sm leading-8 text-white/62">
+          Review your pieces before proceeding to secure checkout.
+        </p>
       </div>
 
       {items.length === 0 ? (
         <div className="naz-card rounded-[2rem] p-8 sm:p-10">
-          <h2 className="text-2xl font-medium text-white">Your cart is empty.</h2>
-          <p className="mt-4 max-w-2xl text-sm leading-8 text-white/62">
-            Explore the current NAZ drop and add your piece to continue.
+          <p className="text-[10px] uppercase tracking-[0.28em] text-white/42">
+            No pieces selected
           </p>
 
-          <div className="mt-8">
+          <h2 className="mt-4 text-2xl font-medium tracking-[-0.03em] text-white sm:text-3xl">
+            Your cart is currently empty.
+          </h2>
+
+          <p className="mt-4 max-w-2xl text-sm leading-8 text-white/62">
+            Explore the current NAZ release and select the piece that fits your
+            presence.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-4">
             <Link href="/products" className="naz-button">
-              Shop now
+              Explore the drop
+            </Link>
+
+            <Link
+              href="/about"
+              className="inline-flex items-center rounded-full border border-white/10 px-6 py-4 text-xs font-semibold uppercase tracking-[0.22em] text-white/70 transition hover:border-white/20 hover:text-white"
+            >
+              Read the story
             </Link>
           </div>
         </div>
@@ -104,33 +131,48 @@ export default function CartPage() {
                         <p className="text-xs uppercase tracking-[0.24em] text-white/40">
                           NAZ
                         </p>
+
                         <h2 className="mt-2 text-lg font-medium text-white">
                           {item.name}
                         </h2>
-                        <p className="mt-2 text-sm text-white/55">Size: {item.size}</p>
+
+                        <div className="mt-3 flex flex-wrap gap-3 text-sm text-white/55">
+                          <span>Size: {item.size}</span>
+                          <span className="text-white/25">•</span>
+                          <span>
+                            {formatMoney(item.priceCents, item.currency)} each
+                          </span>
+                        </div>
                       </div>
 
                       <p className="text-sm text-white/72">
-                        {formatMoney(item.priceCents, item.currency)}
+                        {formatMoney(
+                          item.priceCents * item.quantity,
+                          item.currency
+                        )}
                       </p>
                     </div>
 
                     <div className="mt-5 flex flex-wrap items-center gap-3">
-                      <div className="flex items-center rounded-full border border-white/10">
+                      <div className="flex items-center rounded-full border border-white/10 bg-white/[0.03]">
                         <button
                           type="button"
                           onClick={() => decreaseQuantity(item.id, item.size)}
                           className="px-4 py-2 text-sm text-white/75 transition hover:text-white"
+                          aria-label={`Decrease quantity for ${item.name}`}
                         >
                           −
                         </button>
+
                         <span className="min-w-10 text-center text-sm text-white">
                           {item.quantity}
                         </span>
+
                         <button
                           type="button"
                           onClick={() => increaseQuantity(item.id, item.size)}
                           className="px-4 py-2 text-sm text-white/75 transition hover:text-white"
+                          aria-label={`Increase quantity for ${item.name}`}
                         >
                           +
                         </button>
@@ -148,15 +190,54 @@ export default function CartPage() {
                 </div>
               </article>
             ))}
+
+            <div className="naz-card rounded-[2rem] p-6 sm:p-7">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-white/42">
+                Before checkout
+              </p>
+
+              <div className="mt-4 grid gap-3 text-sm text-white/68">
+                <div className="flex justify-between gap-4">
+                  <span>Secure payment</span>
+                  <span className="text-white/82">Processed by Stripe</span>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                  <span>Shipping</span>
+                  <span className="text-right text-white/82">
+                    Tracked delivery calculated at checkout
+                  </span>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                  <span>Returns</span>
+                  <span className="text-white/82">14-day return window</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <aside className="h-fit naz-card rounded-[2rem] p-6 sm:p-8">
+          <aside className="h-fit naz-card rounded-[2rem] p-6 sm:p-8 lg:sticky lg:top-24">
             <p className="naz-eyebrow mb-4">Summary</p>
 
-            <div className="grid gap-4 text-sm text-white/68">
+            <h2 className="text-2xl font-medium tracking-[-0.03em] text-white">
+              You are almost there.
+            </h2>
+
+            <p className="mt-4 text-sm leading-8 text-white/62">
+              Review your selection and continue to secure checkout to complete
+              your order.
+            </p>
+
+            <div className="mt-8 grid gap-4 text-sm text-white/68">
               <div className="flex justify-between gap-4">
-                <span>Items</span>
-                <span>{itemCount}</span>
+                <span>Pieces</span>
+                <span>{totalPieces}</span>
+              </div>
+
+              <div className="flex justify-between gap-4">
+                <span>Line items</span>
+                <span>{items.length}</span>
               </div>
 
               <div className="flex justify-between gap-4">
@@ -166,7 +247,7 @@ export default function CartPage() {
 
               <div className="flex justify-between gap-4">
                 <span>Shipping</span>
-                <span>Calculated at checkout</span>
+                <span className="text-right">Calculated at checkout</span>
               </div>
             </div>
 
@@ -178,6 +259,12 @@ export default function CartPage() {
                 </span>
               </div>
             </div>
+
+            {error ? (
+              <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/72">
+                {error}
+              </div>
+            ) : null}
 
             <button
               type="button"
@@ -194,9 +281,24 @@ export default function CartPage() {
             >
               Continue shopping →
             </Link>
+
+            <div className="mt-8 grid gap-3 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 text-xs text-white/45">
+              <TrustRow label="Payment" value="Visa / Mastercard / Stripe" />
+              <TrustRow label="Security" value="Encrypted checkout" />
+              <TrustRow label="Release" value="Limited NAZ production" />
+            </div>
           </aside>
         </div>
       )}
+    </div>
+  );
+}
+
+function TrustRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <span className="uppercase tracking-[0.28em] text-white/45">{label}</span>
+      <span className="text-right text-white/68">{value}</span>
     </div>
   );
 }
