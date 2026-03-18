@@ -126,11 +126,11 @@ export default function OrderShippedVIP({
                 color: "rgba(255,255,255,0.75)",
               }}
             >
-              {customerName ? `Hi ${customerName}, ` : ""}
-              you are part of a limited group receiving priority handling.
+              {customerName ? `Hi ${customerName}, ` : "Hi, "}
+              your order is being handled with priority attention as part of
+              private access.
               <br />
-              Your piece is now moving through our system with elevated
-              attention and precision.
+              Your piece is now moving through our system with precision.
             </p>
           </div>
 
@@ -164,7 +164,7 @@ export default function OrderShippedVIP({
                   color: "rgba(255,255,255,0.76)",
                 }}
               >
-                Track movement below.
+                Track your shipment below.
               </p>
 
               {trackingUrl ? (
@@ -184,7 +184,7 @@ export default function OrderShippedVIP({
                       textTransform: "uppercase",
                     }}
                   >
-                    Track movement
+                    Track shipment
                   </a>
                 </div>
               ) : (
@@ -203,7 +203,7 @@ export default function OrderShippedVIP({
                     textTransform: "uppercase",
                   }}
                 >
-                  Movement updates soon
+                  Tracking updates soon
                 </div>
               )}
             </div>
@@ -267,7 +267,7 @@ export default function OrderShippedVIP({
                   color: "rgba(255,255,255,0.42)",
                 }}
               >
-                Go NAZ — Win your own race
+                Go Naz — Win your own race
               </p>
             </div>
           </div>

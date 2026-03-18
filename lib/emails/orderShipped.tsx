@@ -13,7 +13,7 @@ type OrderShippedEmailProps = {
   trackingUrl?: string | null;
   customerEmail: string;
   items?: OrderItem[];
-  carrier?: string | null; // 
+  carrier?: string | null;
 };
 
 export default function OrderShippedEmail({
@@ -23,6 +23,7 @@ export default function OrderShippedEmail({
   trackingUrl,
   customerEmail,
   items = [],
+  carrier,
 }: OrderShippedEmailProps) {
   return (
     <div
@@ -79,7 +80,7 @@ export default function OrderShippedEmail({
                 color: "rgba(255,255,255,0.45)",
               }}
             >
-              Luxury streetwear with motorsport energy
+              Luxury streetwear shaped by presence
             </div>
           </div>
 
@@ -93,7 +94,7 @@ export default function OrderShippedEmail({
                 marginBottom: "14px",
               }}
             >
-              Shipping Update
+              Shipping update
             </div>
 
             <h1
@@ -117,7 +118,8 @@ export default function OrderShippedEmail({
               }}
             >
               {customerName ? `Thank you, ${customerName}. ` : ""}
-              Your NAZ piece has been shipped and is now in motion.
+              Your NAZ order has now been dispatched and is moving toward its
+              destination.
             </p>
           </div>
 
@@ -139,7 +141,7 @@ export default function OrderShippedEmail({
                   marginBottom: "14px",
                 }}
               >
-                Shipment Details
+                Shipment details
               </div>
 
               <table
@@ -194,6 +196,31 @@ export default function OrderShippedEmail({
                     </td>
                   </tr>
 
+                  {carrier ? (
+                    <tr>
+                      <td
+                        style={{
+                          padding: "10px 0",
+                          fontSize: "14px",
+                          color: "rgba(255,255,255,0.50)",
+                        }}
+                      >
+                        Carrier
+                      </td>
+                      <td
+                        align="right"
+                        style={{
+                          padding: "10px 0",
+                          fontSize: "14px",
+                          color: "#ffffff",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {carrier}
+                      </td>
+                    </tr>
+                  ) : null}
+
                   <tr>
                     <td
                       style={{
@@ -236,7 +263,7 @@ export default function OrderShippedEmail({
                       textTransform: "uppercase",
                     }}
                   >
-                    Track Shipment
+                    Track shipment
                   </a>
                 </div>
               ) : null}
@@ -335,7 +362,7 @@ export default function OrderShippedEmail({
                   color: "rgba(255,255,255,0.40)",
                 }}
               >
-                go NAZ — win your own race
+                Go Naz — Win your own race
               </p>
             </div>
           </div>

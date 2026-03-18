@@ -4,14 +4,14 @@ type OrderItem = {
   name: string;
   size?: string | null;
   quantity: number;
-  price?: number | null; // cents
+  price?: number | null;
 };
 
 type OrderConfirmationEmailProps = {
   customerName?: string | null;
   orderNumber: string;
   customerEmail: string;
-  total: number; // cents
+  total: number;
   currency?: string | null;
   items?: OrderItem[];
 };
@@ -40,8 +40,7 @@ export default function OrderConfirmationEmail({
         padding: 0,
         backgroundColor: "#000000",
         color: "#ffffff",
-        fontFamily:
-          "Inter, Arial, Helvetica, sans-serif",
+        fontFamily: "Inter, Arial, Helvetica, sans-serif",
       }}
     >
       <div
@@ -60,7 +59,6 @@ export default function OrderConfirmationEmail({
             backgroundColor: "#050505",
           }}
         >
-          {/* Top */}
           <div
             style={{
               padding: "32px 28px",
@@ -90,11 +88,10 @@ export default function OrderConfirmationEmail({
                 color: "rgba(255,255,255,0.45)",
               }}
             >
-              Luxury streetwear with motorsport energy
+              Luxury streetwear shaped by presence
             </div>
           </div>
 
-          {/* Hero */}
           <div
             style={{
               padding: "36px 28px 20px",
@@ -109,7 +106,7 @@ export default function OrderConfirmationEmail({
                 marginBottom: "14px",
               }}
             >
-              Order Confirmation
+              Order confirmation
             </div>
 
             <h1
@@ -133,11 +130,11 @@ export default function OrderConfirmationEmail({
               }}
             >
               {customerName ? `Thank you, ${customerName}. ` : "Thank you. "}
-              Your NAZ piece is now in motion.
+              Your NAZ order has been received successfully and is now moving
+              into preparation.
             </p>
           </div>
 
-          {/* Order summary */}
           <div
             style={{
               padding: "20px 28px 0",
@@ -160,7 +157,7 @@ export default function OrderConfirmationEmail({
                   marginBottom: "14px",
                 }}
               >
-                Order Details
+                Order details
               </div>
 
               <table
@@ -242,7 +239,6 @@ export default function OrderConfirmationEmail({
             </div>
           </div>
 
-          {/* Items */}
           {items.length > 0 && (
             <div
               style={{
@@ -332,7 +328,6 @@ export default function OrderConfirmationEmail({
             </div>
           )}
 
-          {/* Message */}
           <div
             style={{
               padding: "28px 28px 0",
@@ -346,11 +341,11 @@ export default function OrderConfirmationEmail({
                 color: "rgba(255,255,255,0.68)",
               }}
             >
-              We will send you another update as soon as your order is shipped.
+              We will send you another update as soon as your order has been
+              dispatched.
             </p>
           </div>
 
-          {/* Trust */}
           <div
             style={{
               padding: "22px 28px 0",
@@ -373,7 +368,7 @@ export default function OrderConfirmationEmail({
                   marginBottom: "10px",
                 }}
               >
-                NAZ Standard
+                NAZ standard
               </div>
 
               <div
@@ -385,16 +380,15 @@ export default function OrderConfirmationEmail({
               >
                 Secure payment via Stripe
                 <br />
-                Fast EU shipping
+                Tracked European shipping
                 <br />
                 Limited production
                 <br />
-                Premium heavyweight fabric
+                Premium heavyweight construction
               </div>
             </div>
           </div>
 
-          {/* Footer */}
           <div
             style={{
               padding: "28px 28px 32px",
@@ -416,7 +410,7 @@ export default function OrderConfirmationEmail({
                   color: "rgba(255,255,255,0.40)",
                 }}
               >
-                go NAZ — win your own race
+                Go Naz — Win your own race
               </p>
             </div>
           </div>

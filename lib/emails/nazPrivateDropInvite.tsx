@@ -36,6 +36,7 @@ export default function NazPrivateDropInvite({
             overflow: "hidden",
             background:
               "linear-gradient(180deg, #07090d 0%, #040404 38%, #050505 100%)",
+            boxShadow: "0 0 0 1px rgba(255,255,255,0.03) inset",
           }}
         >
           <div
@@ -57,6 +58,7 @@ export default function NazPrivateDropInvite({
             >
               NAZ
             </div>
+
             <div
               style={{
                 marginTop: "12px",
@@ -66,7 +68,7 @@ export default function NazPrivateDropInvite({
                 color: "rgba(255,255,255,0.46)",
               }}
             >
-              NAZ Private Access
+              Private Access
             </div>
           </div>
 
@@ -109,10 +111,10 @@ export default function NazPrivateDropInvite({
               }}
             >
               {customerName ? `Hi ${customerName}, ` : "Hi, "}
-              you are seeing <strong>{dropName}</strong> before the public
-              release.
+              you now have access to <strong>{dropName}</strong> before the
+              public release.
               <br />
-              This access is reserved for selected NAZ clients.
+              This invitation is reserved for selected NAZ clients.
             </p>
           </div>
 
@@ -146,7 +148,8 @@ export default function NazPrivateDropInvite({
                   color: "rgba(255,255,255,0.76)",
                 }}
               >
-                You can view and order this drop before everyone else.
+                You can now view and order this release ahead of the public
+                launch.
               </p>
 
               <div style={{ marginTop: "20px" }}>
@@ -229,7 +232,7 @@ export default function NazPrivateDropInvite({
                   color: "rgba(255,255,255,0.42)",
                 }}
               >
-                Go NAZ — Win your own race
+                Go Naz — Win your own race
               </p>
             </div>
           </div>
