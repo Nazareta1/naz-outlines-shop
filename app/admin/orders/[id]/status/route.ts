@@ -565,7 +565,7 @@ export async function PATCH(
       });
     }
 
-    if (becamePaid || becameShipped || becameDelivered) {
+    if (order.paymentStatus === "paid") {
       await evaluateNazPrivateAccess({
         id: orderWithItems.id,
         email: orderWithItems.email,
