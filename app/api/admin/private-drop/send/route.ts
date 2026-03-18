@@ -14,7 +14,18 @@ export async function POST(req: NextRequest) {
     const dropName = String(body?.dropName ?? "").trim() || dropSlug;
 
     if (!dropSlug) {
-      return new NextResponse("Missing dropSlug", { status: 400 });
+      return NextResponse.json(
+        { error: "Missing dropSlug" },
+        { status: 400 }
+      );
+    }
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (!siteUrl) {
+      return NextResponse.json(
+        { error: "Missing NEXT_PUBLIC_SITE_URL" },
+        { status: 500 }
+      );
     }
 
     const vipOrders = await prisma.order.findMany({
@@ -31,11 +42,6 @@ export async function POST(req: NextRequest) {
 
     if (vipOrders.length === 0) {
       return NextResponse.json({ ok: true, sent: 0 });
-    }
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    if (!siteUrl) {
-      return new NextResponse("Missing NEXT_PUBLIC_SITE_URL", { status: 500 });
     }
 
     let sent = 0;
@@ -79,8 +85,9 @@ Go NAZ — Win your own race`,
     return NextResponse.json({ ok: true, sent });
   } catch (e: any) {
     console.error("Private drop send failed:", e);
-    return new NextResponse(e?.message ?? "Failed to send private drop emails", {
-      status: 500,
-    });
+    return NextResponse.json(
+      { error: e?.message ?? "Failed to send private drop emails" },
+      { status: 500 }
+    );
   }
 }
