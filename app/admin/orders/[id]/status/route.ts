@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resend, EMAIL_FROM } from "@/lib/resend";
 import OrderShippedEmail from "@/lib/emails/orderShipped";
+import OrderShippedVIP from "@/lib/emails/orderShippedVIP";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -198,6 +199,7 @@ async function sendShippedEmail(order: {
   trackingNumber?: string | null;
   trackingUrl?: string | null;
   shippingCarrier?: string | null;
+  nazPrivateAccess?: boolean;
   items: Array<{
     quantity: number;
     size: string | null;
@@ -227,20 +229,44 @@ async function sendShippedEmail(order: {
           .join("\n")
       : "No items listed.";
 
+  const isVIP = Boolean(order.nazPrivateAccess);
+
   await resend.emails.send({
     from: EMAIL_FROM,
     to: order.email,
-    subject: "NAZ — Your order is on the way",
-    react: OrderShippedEmail({
-      customerName: order.name,
-      orderNumber: order.id,
-      trackingNumber: order.trackingNumber || null,
-      trackingUrl: order.trackingUrl || null,
-      customerEmail: order.email,
-      items: itemsForEmail,
-      carrier: order.shippingCarrier || null,
-    }),
-    text: `NAZ — Your order is on the way
+    subject: isVIP
+      ? "NAZ Private Access — Your order is in motion"
+      : "NAZ — Your order is on the way",
+    react: isVIP
+      ? OrderShippedVIP({
+          customerName: order.name,
+          trackingUrl: order.trackingUrl || null,
+        })
+      : OrderShippedEmail({
+          customerName: order.name,
+          orderNumber: order.id,
+          trackingNumber: order.trackingNumber || null,
+          trackingUrl: order.trackingUrl || null,
+          customerEmail: order.email,
+          items: itemsForEmail,
+          carrier: order.shippingCarrier || null,
+        }),
+    text: isVIP
+      ? `NAZ Private Access — Your order is in motion
+
+Your order is in motion.
+
+You are part of a limited group receiving priority handling.
+Your piece is now moving through our system with elevated attention and precision.
+
+${order.trackingUrl ? `Track movement: ${order.trackingUrl}` : "Movement updates soon."}
+
+Access defines timing.
+You are already ahead.
+
+— NAZ
+Go NAZ — Win your own race`
+      : `NAZ — Your order is on the way
 
 Order #${order.id}
 Email: ${order.email}
@@ -465,11 +491,6 @@ export async function PATCH(
       return new NextResponse("Order not found", { status: 404 });
     }
 
-    const becamePaid =
-      type === "payment" &&
-      status === "paid" &&
-      existingOrder.paymentStatus !== "paid";
-
     const becameShipped =
       type === "fulfillment" &&
       status === "shipped" &&
@@ -526,15 +547,55 @@ export async function PATCH(
       return NextResponse.json({ ok: true, ...updated });
     }
 
-    if (becameShipped && !orderWithItems.shippingEmailSentAt) {
-      await sendShippedEmail({
+    if (orderWithItems.paymentStatus === "paid") {
+      await evaluateNazPrivateAccess({
         id: orderWithItems.id,
         email: orderWithItems.email,
         name: orderWithItems.name,
-        trackingNumber: orderWithItems.trackingNumber,
-        trackingUrl: orderWithItems.trackingUrl,
-        shippingCarrier: orderWithItems.shippingCarrier,
-        items: orderWithItems.items.map((item) => ({
+        nazPrivateAccess: orderWithItems.nazPrivateAccess,
+      });
+    }
+
+    const refreshedOrder = await prisma.order.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        trackingNumber: true,
+        trackingUrl: true,
+        shippingCarrier: true,
+        shippingEmailSentAt: true,
+        deliveredEmailSentAt: true,
+        nazPrivateAccess: true,
+        items: {
+          select: {
+            quantity: true,
+            size: true,
+            product: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!refreshedOrder) {
+      return NextResponse.json({ ok: true, ...updated });
+    }
+
+    if (becameShipped && !refreshedOrder.shippingEmailSentAt) {
+      await sendShippedEmail({
+        id: refreshedOrder.id,
+        email: refreshedOrder.email,
+        name: refreshedOrder.name,
+        trackingNumber: refreshedOrder.trackingNumber,
+        trackingUrl: refreshedOrder.trackingUrl,
+        shippingCarrier: refreshedOrder.shippingCarrier,
+        nazPrivateAccess: refreshedOrder.nazPrivateAccess,
+        items: refreshedOrder.items.map((item) => ({
           quantity: item.quantity,
           size: item.size,
           product: {
@@ -551,11 +612,11 @@ export async function PATCH(
       });
     }
 
-    if (becameDelivered && !orderWithItems.deliveredEmailSentAt) {
+    if (becameDelivered && !refreshedOrder.deliveredEmailSentAt) {
       await sendDeliveredEmail({
-        id: orderWithItems.id,
-        email: orderWithItems.email,
-        name: orderWithItems.name,
+        id: refreshedOrder.id,
+        email: refreshedOrder.email,
+        name: refreshedOrder.name,
       });
 
       await prisma.order.update({
@@ -563,15 +624,6 @@ export async function PATCH(
         data: {
           deliveredEmailSentAt: new Date(),
         },
-      });
-    }
-
-    if (orderWithItems.paymentStatus === "paid") {
-      await evaluateNazPrivateAccess({
-        id: orderWithItems.id,
-        email: orderWithItems.email,
-        name: orderWithItems.name,
-        nazPrivateAccess: orderWithItems.nazPrivateAccess,
       });
     }
 
