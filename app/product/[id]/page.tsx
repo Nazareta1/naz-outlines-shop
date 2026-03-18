@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { validatePrivateAccessToken } from "@/lib/private-access";
 import ProductClient from "./ProductClient";
 
 export const runtime = "nodejs";
@@ -36,6 +38,12 @@ function formatMoney(cents: number, currency: string) {
   return cur === "EUR" ? `€${amount}` : `${amount} ${cur}`;
 }
 
+async function getProduct(id: string) {
+  return prisma.product.findUnique({
+    where: { id },
+  });
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -43,9 +51,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
 
-  const product = await prisma.product.findUnique({
-    where: { id },
-  });
+  const product = await getProduct(id);
 
   if (!product) {
     return {
@@ -63,14 +69,15 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { id } = await params;
+  const { token } = await searchParams;
 
-  const product = await prisma.product.findUnique({
-    where: { id },
-  });
+  const product = await getProduct(id);
 
   if (!product || !product.active) {
     return (
@@ -95,15 +102,42 @@ export default async function ProductPage({
     );
   }
 
+  if (product.isPrivateDrop) {
+    if (!product.dropSlug) {
+      notFound();
+    }
+
+    if (!token) {
+      redirect("/");
+    }
+
+    const access = await validatePrivateAccessToken({
+      token,
+      dropSlug: product.dropSlug,
+    });
+
+    if (!access) {
+      redirect("/");
+    }
+
+    const tokenEmail = access.email?.toLowerCase().trim();
+    const productAccessAllowed = await prisma.order.findFirst({
+      where: {
+        email: tokenEmail,
+        nazPrivateAccess: true,
+      },
+      select: { id: true },
+    });
+
+    if (!productAccessAllowed) {
+      redirect("/");
+    }
+  }
+
   const specs = getSpecs(product.priceCents);
   const mainImage = product.imageUrl || "/logo.png";
 
-  const gallery = [
-    mainImage,
-    mainImage,
-    mainImage,
-    mainImage,
-  ];
+  const gallery = [mainImage, mainImage, mainImage, mainImage];
 
   return (
     <ProductClient
@@ -118,6 +152,9 @@ export default async function ProductPage({
         stockS: product.stockS,
         stockM: product.stockM,
         stockL: product.stockL,
+        isPrivateDrop: product.isPrivateDrop,
+        dropSlug: product.dropSlug,
+        accessToken: token || null,
       }}
       specs={{
         gsm: specs.gsm,

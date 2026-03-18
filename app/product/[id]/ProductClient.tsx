@@ -29,6 +29,9 @@ export default function ProductClient({
     stockS: number;
     stockM: number;
     stockL: number;
+    isPrivateDrop?: boolean;
+    dropSlug?: string | null;
+    accessToken?: string | null;
   };
   specs: {
     gsm: string;
@@ -58,15 +61,20 @@ export default function ProductClient({
         : product.stockL;
 
   const inStock = selectedStock > 0;
+  const isPrivate = Boolean(product.isPrivateDrop);
+  const backHref =
+    isPrivate && product.dropSlug && product.accessToken
+      ? `/private-drop/${product.dropSlug}?token=${product.accessToken}`
+      : "/products";
 
   return (
     <div className="container-naz py-12 pb-20 md:py-16 md:pb-24">
       <div className="mb-8">
         <Link
-          href="/products"
+          href={backHref}
           className="text-xs uppercase tracking-[0.28em] text-white/65 transition hover:text-white"
         >
-          ← Back to shop
+          ← Back to {isPrivate ? "private drop" : "shop"}
         </Link>
       </div>
 
@@ -74,6 +82,12 @@ export default function ProductClient({
         <div className="lg:col-span-7">
           <div className="grid gap-4">
             <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03]">
+              {isPrivate ? (
+                <div className="absolute left-4 top-4 z-10 rounded-full border border-white/15 bg-black/60 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-white/75 backdrop-blur">
+                  NAZ Private Access
+                </div>
+              ) : null}
+
               <Image
                 src={gallery[selectedImage] || "/logo.png"}
                 alt={product.engineeredName}
@@ -116,7 +130,13 @@ export default function ProductClient({
 
         <div className="lg:col-span-5">
           <div className="naz-card rounded-[2rem] p-7 sm:p-9">
-            <p className="naz-eyebrow mb-4">NAZ</p>
+            {isPrivate ? (
+              <div className="mb-5 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-white/70">
+                NAZ Private Access
+              </div>
+            ) : (
+              <p className="naz-eyebrow mb-4">NAZ</p>
+            )}
 
             <h1 className="text-3xl font-medium leading-[1.05] tracking-[-0.03em] text-white sm:text-4xl">
               {product.engineeredName}
@@ -125,6 +145,23 @@ export default function ProductClient({
             <p className="mt-3 text-sm uppercase tracking-[0.22em] text-white/42">
               {product.displayName}
             </p>
+
+            {isPrivate ? (
+              <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-[10px] uppercase tracking-[0.24em] text-white/45">
+                  Release access
+                </p>
+                <p className="mt-2 text-sm leading-7 text-white/72">
+                  You are viewing this piece before the public launch. This
+                  access is reserved for selected clients.
+                </p>
+                {product.dropSlug ? (
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-white/38">
+                    Drop: {product.dropSlug}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="mt-6 flex items-end justify-between gap-4">
               <div>
@@ -226,7 +263,7 @@ export default function ProductClient({
               <div className="flex justify-between gap-4">
                 <span className="uppercase tracking-[0.28em]">Drop</span>
                 <span className="text-right text-white/58">
-                  Limited production
+                  {isPrivate ? "Private release" : "Limited production"}
                 </span>
               </div>
             </div>
