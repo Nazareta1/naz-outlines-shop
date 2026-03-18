@@ -13,7 +13,7 @@ export async function createPrivateAccessToken({
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
 
-  const record = await prisma.privateAccessToken.create({
+  return prisma.privateAccessToken.create({
     data: {
       email: email.toLowerCase().trim(),
       token,
@@ -21,8 +21,6 @@ export async function createPrivateAccessToken({
       expiresAt,
     },
   });
-
-  return record;
 }
 
 export async function validatePrivateAccessToken({
