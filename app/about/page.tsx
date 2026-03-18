@@ -5,7 +5,7 @@ import Image from "next/image";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Discover the story behind NAZ — a luxury streetwear label shaped by confidence, elegance, and motorsport-inspired presence.",
+    "Discover the story behind NAZ — a luxury streetwear label shaped by confidence, presence, and motorsport-inspired energy.",
 };
 
 export default function AboutPage() {
@@ -16,11 +16,11 @@ export default function AboutPage() {
           <div className="max-w-3xl">
             <p className="naz-eyebrow mb-6">About NAZ</p>
             <h1 className="naz-heading-lg text-white">
-              More than a name. A feeling of becoming fully yourself.
+              More than a name. A shift in identity.
             </h1>
-            <p className="mt-6 text-base leading-8 text-white/70 sm:text-lg">
-              NAZ is a luxury streetwear label shaped by confidence, elegance,
-              controlled intensity, and the kind of presence people remember.
+            <p className="mt-6 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
+              NAZ is a luxury streetwear label shaped by quiet confidence,
+              controlled presence, and a refined motorsport-inspired energy.
             </p>
           </div>
 
@@ -42,37 +42,54 @@ export default function AboutPage() {
         <div className="grid gap-14 lg:grid-cols-[0.95fr_1.05fr]">
           <div>
             <p className="naz-eyebrow mb-4">The origin</p>
-            <h2 className="text-3xl font-medium leading-tight text-white sm:text-4xl">
-              NAZ began with a name that finally felt right.
+            <h2 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white sm:text-4xl">
+              NAZ is not just a name. It is a moment.
             </h2>
           </div>
 
           <div className="space-y-6 text-base leading-8 text-white/70">
             <p>
-              For most of my life, people called me by one of my names,
-              Paulina. I never questioned it too much, because my full name is
-              Nazareta Paulina and people naturally chose the easier version.
+              A moment when identity became clear, and confidence stopped asking
+              for permission.
             </p>
 
             <p>
-              But when I was 21, I spent four months abroad and introduced
-              myself simply as Nazareta. People started calling me NAZ, and
-              something changed. For the first time, I felt fully aligned with
-              myself — freer, stronger, more certain, and more confident in my
-              own decisions.
+              Before that, there was hesitation. After that, there was only
+              direction.
             </p>
 
             <p>
-              That period became deeply important to me because I felt accepted
-              exactly as I was. I did things in my own way, trusted my own
-              direction, and carried myself with a level of confidence I had not
-              felt before.
+              Somewhere in that shift, a simple phrase started to follow me —
+              <span className="italic"> “Go Naz.”</span>
             </p>
 
             <p>
-              NAZ was not just a shorter version of my name. It became a symbol
-              of identity, self-trust, and the energy of becoming who you were
-              always meant to be.
+              It was said lightly, almost without meaning. But each time, it
+              removed doubt. It replaced hesitation with movement.
+            </p>
+
+            <p>
+              That idea became something bigger.
+            </p>
+
+            <p className="text-white/82 italic">
+              Go Naz. <br />
+              Win your own race.
+            </p>
+
+            <p>
+              NAZ exists in that space — between control and expression, between
+              silence and presence.
+            </p>
+
+            <p>
+              Every piece reflects that state.
+            </p>
+
+            <p className="text-white/82">
+              Quiet confidence. <br />
+              Controlled presence. <br />
+              Energy that stays.
             </p>
           </div>
         </div>
@@ -81,50 +98,49 @@ export default function AboutPage() {
       <section className="container-naz border-t border-white/10 py-20">
         <div className="grid gap-14 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-6 text-base leading-8 text-white/70">
-            <p className="naz-eyebrow">The brand philosophy</p>
-            <h2 className="text-3xl font-medium leading-tight text-white sm:text-4xl">
-              Fashion that carries elegance, darkness, and presence.
+            <p className="naz-eyebrow">The philosophy</p>
+            <h2 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white sm:text-4xl">
+              Designed to hold attention without asking for it.
             </h2>
 
             <p>
-              NAZ is inspired by the tension between elegance and force. It
-              takes influence from motorsport, powerful silhouettes, dark
-              aesthetics, and the kind of energy that does not need to be loud
-              to dominate a room.
+              NAZ is built on the tension between elegance and force. It draws
+              from motorsport, dark visual discipline, and silhouettes that feel
+              controlled, elevated, and immediate.
             </p>
 
             <p>
-              This is not clothing designed to beg for attention. It is designed
-              to create presence naturally — through structure, detail,
-              confidence, and identity.
+              This is not clothing created to chase attention. It is created for
+              presence — the kind that is felt naturally through attitude,
+              proportion, detail, and self-assurance.
             </p>
 
             <p>
-              Every piece is meant to feel sharp, elevated, and intentional.
-              Strong lines, premium weight, and visual control are part of what
-              makes NAZ feel distinct.
+              Every release is designed to feel substantial the moment it is
+              worn. Strong lines, premium weight, and visual restraint are part
+              of what gives NAZ its identity.
             </p>
           </div>
 
           <div className="grid gap-6">
             <div className="naz-card rounded-[1.75rem] p-8">
-              <p className="naz-eyebrow mb-3">What NAZ stands for</p>
+              <p className="naz-eyebrow mb-3">What defines NAZ</p>
               <ul className="space-y-4 text-sm leading-7 text-white/72">
-                <li>Confidence without performance.</li>
+                <li>Quiet confidence.</li>
                 <li>Elegance with edge.</li>
-                <li>Controlled attention.</li>
+                <li>Controlled presence.</li>
                 <li>Luxury shaped by identity.</li>
-                <li>Presence that feels natural, not forced.</li>
+                <li>Energy that stays.</li>
               </ul>
             </div>
 
             <div className="naz-card rounded-[1.75rem] p-8">
-              <p className="naz-eyebrow mb-3">Visual direction</p>
+              <p className="naz-eyebrow mb-3">Visual language</p>
               <ul className="space-y-4 text-sm leading-7 text-white/72">
                 <li>Motorsport-inspired movement and tension.</li>
-                <li>Dark, premium color direction.</li>
-                <li>Oversized silhouettes and strong structure.</li>
-                <li>Pieces designed to feel substantial and memorable.</li>
+                <li>Dark, refined colour direction.</li>
+                <li>Strong silhouettes with clear structure.</li>
+                <li>Pieces designed to feel memorable on the body.</li>
               </ul>
             </div>
           </div>
@@ -135,17 +151,17 @@ export default function AboutPage() {
         <div className="mx-auto max-w-4xl text-center">
           <p className="naz-eyebrow mb-4">The intention</p>
           <h2 className="naz-heading-lg text-white">
-            NAZ is for people who want to be felt before they are fully understood.
+            NAZ is for those who move with certainty.
           </h2>
           <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-white/68">
-            It is for people with aura, taste, and self-belief. For those who
-            do not need to chase attention because the way they move, dress, and
-            carry themselves already says enough.
+            For people who do not need to perform confidence, because the way
+            they carry themselves already says enough. For those who understand
+            that presence is not volume — it is energy, restraint, and identity.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/products" className="naz-button">
-              Shop Collection
+              Shop Drop 01
             </Link>
             <Link href="/" className="naz-button-secondary">
               Back to Home
