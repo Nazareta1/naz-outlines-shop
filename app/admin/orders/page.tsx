@@ -21,6 +21,7 @@ function badge(status: string) {
   if (s === "unfulfilled") return "border-white/10 bg-white/[0.03] text-white/70";
   if (s === "fulfilled") return "border-blue-500/20 bg-blue-500/10 text-blue-200";
   if (s === "shipped") return "border-purple-500/20 bg-purple-500/10 text-purple-200";
+  if (s === "delivered") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
   if (s === "cancelled") return "border-zinc-500/20 bg-zinc-500/10 text-zinc-200";
 
   return "border-white/10 bg-white/[0.03] text-white/70";
@@ -51,7 +52,29 @@ export default async function AdminOrdersPage() {
   return (
     <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
       <div className="mx-auto max-w-6xl px-6 pt-12 pb-24">
-        {/* Header */}
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <Link
+            href="/admin/orders"
+            className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+          >
+            Orders
+          </Link>
+
+          <Link
+            href="/admin/private-drop"
+            className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+          >
+            Private Drop
+          </Link>
+
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+          >
+            Back to store
+          </Link>
+        </div>
+
         <div className="flex items-end justify-between gap-6 border-b border-white/10 pb-10">
           <div>
             <div className="text-xs tracking-[0.35em] uppercase text-white/45">
@@ -66,14 +89,13 @@ export default async function AdminOrdersPage() {
           </div>
 
           <Link
-            href="/"
+            href="/admin/private-drop"
             className="hidden sm:inline-flex text-[11px] tracking-[0.28em] uppercase text-white/70 hover:text-white transition"
           >
-            Back to store →
+            Go to private drop →
           </Link>
         </div>
 
-        {/* Empty */}
         {orders.length === 0 ? (
           <div className="mt-12 border border-white/10 bg-[#141416] rounded-[28px] p-10">
             <div className="text-xs tracking-[0.35em] uppercase text-white/45">
@@ -109,7 +131,8 @@ export default async function AdminOrdersPage() {
                       </div>
                       {o.trackingNumber ? (
                         <div className="mt-1 text-xs text-white/45">
-                          {o.shippingCarrier ? `${o.shippingCarrier} • ` : ""}{o.trackingNumber}
+                          {o.shippingCarrier ? `${o.shippingCarrier} • ` : ""}
+                          {o.trackingNumber}
                         </div>
                       ) : null}
                     </div>
@@ -124,10 +147,18 @@ export default async function AdminOrdersPage() {
                     </div>
 
                     <div className="col-span-2 flex flex-col gap-2">
-                      <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(o.paymentStatus)}`}>
+                      <span
+                        className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(
+                          o.paymentStatus
+                        )}`}
+                      >
                         {o.paymentStatus}
                       </span>
-                      <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(o.fulfillmentStatus)}`}>
+                      <span
+                        className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(
+                          o.fulfillmentStatus
+                        )}`}
+                      >
                         {o.fulfillmentStatus}
                       </span>
                     </div>
