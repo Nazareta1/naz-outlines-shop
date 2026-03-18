@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useCart } from "@/app/cart/context";
 
 export default function AddToCartButton({
@@ -20,6 +21,7 @@ export default function AddToCartButton({
   accessToken?: string | null;
 }) {
   const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
 
   function handleAdd() {
     if (!inStock) return;
@@ -34,6 +36,9 @@ export default function AddToCartButton({
       quantity: 1,
       accessToken: accessToken ?? null,
     });
+
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1600);
   }
 
   return (
@@ -48,7 +53,11 @@ export default function AddToCartButton({
           : "cursor-not-allowed border border-white/10 bg-white/10 text-white/35",
       ].join(" ")}
     >
-      {inStock ? `Add to cart · ${selectedSize}` : "Out of stock"}
+      {!inStock
+        ? "Out of stock"
+        : added
+          ? `Added to cart · ${selectedSize}`
+          : `Add to cart · ${selectedSize}`}
     </button>
   );
 }

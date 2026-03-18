@@ -8,27 +8,43 @@ import ProductClient from "./ProductClient";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function getSpecs(price: number) {
+function getProductContent(price: number) {
   if (price === 12500) {
     return {
+      eyebrow: "NAZ Signature Piece",
       subtitle: "Structured Asymmetric Hoodie",
-      gsm: "480 GSM Heavy French Terry",
-      composition: "80% Cotton / 20% Polyester",
-      cut: "Engineered asymmetrical cut",
-      energy: "Controlled structure",
-      description:
-        "A heavyweight NAZ silhouette built with sharp structure, premium density, and a controlled visual line.",
+      shortDescription:
+        "A sharp, heavyweight silhouette shaped by structure, restraint, and controlled presence.",
+      narrative:
+        "Designed for those who do not ask to be seen. The Structured Asymmetric Hoodie brings together weight, line, and quiet intensity in a form that feels deliberate from every angle.",
+      detailsIntro:
+        "Every element is considered to create a stronger visual stance and a more elevated wearing experience.",
+      gsm: "480 GSM heavy French terry",
+      composition: "80% cotton / 20% polyester",
+      cut: "Engineered asymmetric construction",
+      energy: "Controlled, architectural presence",
+      fit: "Boxy silhouette with a structured fall",
+      finish: "Dense hand feel with a premium weighted drape",
+      mood: "Built for presence, not noise",
     };
   }
 
   return {
+    eyebrow: "NAZ Signature Piece",
     subtitle: "Controlled Motorsport Structure Hoodie",
-    gsm: "500 GSM Dense French Terry",
-    composition: "80% Cotton / 20% Polyester",
+    shortDescription:
+      "A dense, premium silhouette informed by tension, movement, and dark motorsport energy.",
+    narrative:
+      "This piece translates motorsport attitude into a sharper fashion language. Strong lines, elevated weight, and controlled construction give it a presence that feels immediate and intentional.",
+    detailsIntro:
+      "Created to feel substantial on the body and visually precise in motion.",
+    gsm: "500 GSM dense French terry",
+    composition: "80% cotton / 20% polyester",
     cut: "Architectural panel construction",
-    energy: "Dark motorsport energy",
-    description:
-      "A premium NAZ hoodie shaped by tension, movement, and dark motorsport-inspired presence.",
+    energy: "Dark motorsport-inspired force",
+    fit: "Oversized structure with a strong outline",
+    finish: "Heavy premium feel with controlled shape retention",
+    mood: "Engineered to be remembered",
   };
 }
 
@@ -50,20 +66,22 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-
   const product = await getProduct(id);
 
   if (!product) {
     return {
-      title: "Product",
+      title: "Product | NAZ",
+      description: "Luxury streetwear shaped by confidence, structure, and presence.",
     };
   }
 
+  const content = getProductContent(product.priceCents);
+
   return {
-    title: product.name,
+    title: `${content.subtitle} | NAZ`,
     description:
       product.description ||
-      `${product.name} by NAZ. ${formatMoney(product.priceCents, product.currency)}.`,
+      `${content.subtitle} by NAZ. ${formatMoney(product.priceCents, product.currency)}. Luxury streetwear shaped by confidence, structure, and presence.`,
   };
 }
 
@@ -92,10 +110,11 @@ export default async function ProductPage({
         <div className="naz-card mt-8 rounded-[2rem] p-8 sm:p-10">
           <p className="naz-eyebrow mb-4">Product</p>
           <h1 className="text-3xl font-medium text-white sm:text-4xl">
-            Not found
+            This piece is unavailable
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-8 text-white/62">
-            This piece is unavailable or no longer active.
+            The product you are looking for is currently unavailable or no longer
+            part of the active collection.
           </p>
         </div>
       </div>
@@ -134,7 +153,7 @@ export default async function ProductPage({
     }
   }
 
-  const specs = getSpecs(product.priceCents);
+  const content = getProductContent(product.priceCents);
   const mainImage = product.imageUrl || "/logo.png";
 
   const gallery = [mainImage, mainImage, mainImage, mainImage];
@@ -144,8 +163,10 @@ export default async function ProductPage({
       product={{
         id: product.id,
         displayName: product.name,
-        engineeredName: specs.subtitle,
-        description: product.description || specs.description,
+        engineeredName: content.subtitle,
+        description: product.description || content.shortDescription,
+        narrative: content.narrative,
+        detailsIntro: content.detailsIntro,
         priceCents: product.priceCents,
         currency: product.currency,
         imageUrl: product.imageUrl,
@@ -157,12 +178,16 @@ export default async function ProductPage({
         accessToken: token || null,
       }}
       specs={{
-        gsm: specs.gsm,
-        composition: specs.composition,
-        cut: specs.cut,
-        energy: specs.energy,
+        gsm: content.gsm,
+        composition: content.composition,
+        cut: content.cut,
+        energy: content.energy,
+        fit: content.fit,
+        finish: content.finish,
+        mood: content.mood,
       }}
       gallery={gallery}
+      eyebrow={content.eyebrow}
     />
   );
 }
