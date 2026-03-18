@@ -501,6 +501,7 @@ export async function PATCH(
         id: true,
         email: true,
         name: true,
+        paymentStatus: true,
         trackingNumber: true,
         trackingUrl: true,
         shippingCarrier: true,
@@ -565,7 +566,7 @@ export async function PATCH(
       });
     }
 
-    if (order.paymentStatus === "paid") {
+    if (orderWithItems.paymentStatus === "paid") {
       await evaluateNazPrivateAccess({
         id: orderWithItems.id,
         email: orderWithItems.email,
