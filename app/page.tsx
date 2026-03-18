@@ -20,36 +20,45 @@ export default async function HomePage() {
 
   return (
     <div className="bg-transparent text-white">
+      {/* HERO */}
       <section className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.1),transparent_35%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_35%,rgba(0,0,0,0.4))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_40%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_40%,rgba(0,0,0,0.5))]" />
 
         <div className="container-naz relative grid min-h-[88vh] items-end gap-10 py-16 md:grid-cols-[1.15fr_0.85fr] md:py-20">
           <div className="max-w-3xl pb-8 md:pb-14">
-            <p className="naz-eyebrow mb-6">Luxury streetwear / motorsport presence</p>
+            <p className="naz-eyebrow mb-6">
+              NAZ / Luxury streetwear / Motorsport influence
+            </p>
 
             <h1 className="naz-heading-xl max-w-4xl text-white">
-              NAZ
+              Designed for presence.
             </h1>
 
             <p className="mt-6 max-w-2xl text-base leading-8 text-white/72 sm:text-lg">
-              Luxury streetwear shaped by confidence, elegance, and controlled
-              intensity. Designed for presence. Built to be remembered.
+              A controlled expression of confidence, elegance, and movement.
+              Each piece is built to hold attention without asking for it.
             </p>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link href="/products" className="naz-button">
-                Shop Drop
+                Shop Drop 01
               </Link>
+
               <Link href="/about" className="naz-button-secondary">
-                Read the Story
+                Discover the story
               </Link>
             </div>
+
+            <p className="mt-6 text-xs uppercase tracking-[0.28em] text-white/40">
+              Limited release · No restock
+            </p>
           </div>
 
           <div className="relative flex items-end justify-center md:justify-end">
             <div className="naz-card relative w-full max-w-[560px] overflow-hidden rounded-[2rem]">
-              <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.65),rgba(0,0,0,0.15))]" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.65),rgba(0,0,0,0.1))]" />
+
               <div className="relative aspect-[4/5] w-full">
                 <Image
                   src="/logo.png"
@@ -64,8 +73,9 @@ export default async function HomePage() {
                 <p className="text-[11px] uppercase tracking-[0.28em] text-white/55">
                   Drop 01
                 </p>
+
                 <p className="mt-2 text-2xl font-medium text-white sm:text-3xl">
-                  Designed for presence.
+                  Built to be remembered.
                 </p>
               </div>
             </div>
@@ -73,24 +83,43 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="container-naz py-18 border-b border-white/10 py-20">
+      {/* TRUST STRIP */}
+      <section className="border-b border-white/10">
+        <div className="container-naz grid gap-6 py-6 text-xs uppercase tracking-[0.28em] text-white/45 sm:grid-cols-3">
+          <div className="flex justify-between sm:block">
+            <span>Secure checkout</span>
+            <span className="text-white/70">Stripe</span>
+          </div>
+          <div className="flex justify-between sm:block">
+            <span>Shipping</span>
+            <span className="text-white/70">Tracked EU delivery</span>
+          </div>
+          <div className="flex justify-between sm:block">
+            <span>Returns</span>
+            <span className="text-white/70">14-day window</span>
+          </div>
+        </div>
+      </section>
+
+      {/* PRODUCTS */}
+      <section className="container-naz border-b border-white/10 py-20">
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="naz-eyebrow mb-4">New drop</p>
-            <h2 className="naz-heading-lg text-white">Featured pieces</h2>
+            <p className="naz-eyebrow mb-4">Current release</p>
+            <h2 className="naz-heading-lg text-white">Drop 01</h2>
           </div>
 
           <Link
             href="/products"
             className="text-sm uppercase tracking-[0.2em] text-white/65 transition hover:text-white"
           >
-            View all
+            View all pieces
           </Link>
         </div>
 
         {products.length === 0 ? (
           <div className="naz-card rounded-[1.75rem] p-8 text-white/70">
-            No active products yet. Add your first NAZ pieces in the admin or database.
+            No active products yet.
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
@@ -107,7 +136,7 @@ export default async function HomePage() {
                         src={product.imageUrl}
                         alt={product.name}
                         fill
-                        className="object-cover object-center transition duration-500 group-hover:scale-[1.03]"
+                        className="object-cover object-center transition duration-500 group-hover:scale-[1.04]"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center bg-white/[0.04] text-sm uppercase tracking-[0.22em] text-white/35">
@@ -126,15 +155,9 @@ export default async function HomePage() {
                       </span>
                     </div>
 
-                    {product.description ? (
-                      <p className="line-clamp-2 text-sm leading-7 text-white/50">
-                        {product.description}
-                      </p>
-                    ) : (
-                      <p className="text-sm leading-7 text-white/40">
-                        Premium NAZ piece.
-                      </p>
-                    )}
+                    <p className="text-xs uppercase tracking-[0.24em] text-white/35">
+                      Limited piece
+                    </p>
                   </div>
                 </div>
               </Link>
@@ -143,62 +166,46 @@ export default async function HomePage() {
         )}
       </section>
 
+      {/* BRAND BLOCKS */}
       <section className="container-naz border-b border-white/10 py-20">
         <div className="grid gap-8 lg:grid-cols-3">
-          <div className="naz-card rounded-[1.75rem] p-8">
-            <p className="naz-eyebrow mb-4">Presence</p>
-            <h3 className="text-2xl font-medium text-white">
-              Built to be noticed without asking for attention.
-            </h3>
-            <p className="mt-4 text-sm leading-8 text-white/62">
-              NAZ is made for people who carry energy before they speak. Sharp,
-              controlled, elegant, and impossible to ignore.
-            </p>
-          </div>
-
-          <div className="naz-card rounded-[1.75rem] p-8">
-            <p className="naz-eyebrow mb-4">Quality</p>
-            <h3 className="text-2xl font-medium text-white">
-              Premium silhouettes with heavyweight attitude.
-            </h3>
-            <p className="mt-4 text-sm leading-8 text-white/62">
-              Oversized structure, strong lines, premium materials, and limited
-              pieces designed to feel substantial the moment you put them on.
-            </p>
-          </div>
-
-          <div className="naz-card rounded-[1.75rem] p-8">
-            <p className="naz-eyebrow mb-4">Energy</p>
-            <h3 className="text-2xl font-medium text-white">
-              Motorsport influence, translated into fashion presence.
-            </h3>
-            <p className="mt-4 text-sm leading-8 text-white/62">
-              Tension, movement, darkness, elegance, and speed shape the visual
-              language behind every NAZ release.
-            </p>
-          </div>
+          <FeatureCard
+            title="Presence"
+            text="Built for individuals who hold attention without seeking it."
+          />
+          <FeatureCard
+            title="Structure"
+            text="Heavyweight silhouettes with controlled lines and strong identity."
+          />
+          <FeatureCard
+            title="Energy"
+            text="Motorsport influence translated into a refined visual language."
+          />
         </div>
       </section>
 
+      {/* STORY */}
       <section className="container-naz grid gap-10 py-20 lg:grid-cols-[1fr_0.9fr] lg:items-center">
         <div className="max-w-2xl">
-          <p className="naz-eyebrow mb-4">The story behind the name</p>
+          <p className="naz-eyebrow mb-4">The origin</p>
+
           <h2 className="naz-heading-lg text-white">
-            NAZ began the moment confidence stopped asking for permission.
+            NAZ began with a shift in identity.
           </h2>
+
           <p className="mt-6 text-base leading-8 text-white/68">
-            What started as a name became an identity. NAZ is rooted in a moment
-            of freedom, self-trust, and becoming fully comfortable with being
-            seen exactly as you are.
+            A moment where self-perception changed, and confidence no longer
+            required validation. What started as a name became a presence.
           </p>
+
           <p className="mt-4 text-base leading-8 text-white/68">
-            That feeling now lives inside the brand — elegant, sharp, powerful,
-            and unapologetically present.
+            Today, NAZ represents a refined form of that feeling — controlled,
+            elegant, and impossible to overlook.
           </p>
 
           <div className="mt-8">
             <Link href="/about" className="naz-button">
-              Discover About NAZ
+              Read full story
             </Link>
           </div>
         </div>
@@ -214,6 +221,18 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function FeatureCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="naz-card rounded-[1.75rem] p-8">
+      <p className="naz-eyebrow mb-4">{title}</p>
+
+      <h3 className="text-2xl font-medium text-white">{title}</h3>
+
+      <p className="mt-4 text-sm leading-8 text-white/62">{text}</p>
     </div>
   );
 }
