@@ -33,14 +33,46 @@ function getAvailableStock(
   return product.stockL;
 }
 
+function isValidCartItem(item: unknown): item is CartItem {
+  if (!item || typeof item !== "object") return false;
+
+  const value = item as Record<string, unknown>;
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.priceCents === "number" &&
+    Number.isInteger(value.priceCents) &&
+    value.priceCents > 0 &&
+    typeof value.currency === "string" &&
+    (value.size === "S" || value.size === "M" || value.size === "L") &&
+    typeof value.quantity === "number" &&
+    Number.isInteger(value.quantity) &&
+    value.quantity > 0 &&
+    value.quantity <= 10 &&
+    (value.accessToken === undefined ||
+      value.accessToken === null ||
+      typeof value.accessToken === "string")
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const items = body?.items as CartItem[] | undefined;
+    const rawItems = body?.items;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return Response.json({ error: "Your cart is empty." }, { status: 400 });
     }
+
+    if (!rawItems.every(isValidCartItem)) {
+      return Response.json(
+        { error: "Your cart contains invalid data. Please refresh and try again." },
+        { status: 400 }
+      );
+    }
+
+    const items: CartItem[] = rawItems;
 
     const productIds = [...new Set(items.map((item) => item.id))];
 
@@ -54,7 +86,6 @@ export async function POST(req: Request) {
         name: true,
         priceCents: true,
         currency: true,
-        active: true,
         stockS: true,
         stockM: true,
         stockL: true,
@@ -65,7 +96,7 @@ export async function POST(req: Request) {
 
     if (products.length !== productIds.length) {
       return Response.json(
-        { error: "One or more products are unavailable." },
+        { error: "One or more selected pieces are no longer available." },
         { status: 400 }
       );
     }
@@ -75,7 +106,25 @@ export async function POST(req: Request) {
 
       if (!product) {
         return Response.json(
-          { error: `Product not found: ${item.name}` },
+          { error: `Product not found: ${item.name}.` },
+          { status: 400 }
+        );
+      }
+
+      if (product.currency.toUpperCase() !== item.currency.toUpperCase()) {
+        return Response.json(
+          {
+            error: `Currency mismatch for ${product.name}. Please refresh your cart.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (product.priceCents !== item.priceCents) {
+        return Response.json(
+          {
+            error: `The price for ${product.name} has changed. Please refresh your cart.`,
+          },
           { status: 400 }
         );
       }
@@ -85,14 +134,14 @@ export async function POST(req: Request) {
 
         if (!token) {
           return Response.json(
-            { error: "Private drop access required." },
+            { error: "Private drop access is required for this piece." },
             { status: 403 }
           );
         }
 
         if (!product.dropSlug) {
           return Response.json(
-            { error: "Invalid drop configuration." },
+            { error: "This private drop is not configured correctly." },
             { status: 400 }
           );
         }
@@ -104,12 +153,19 @@ export async function POST(req: Request) {
 
         if (!access) {
           return Response.json(
-            { error: "Invalid or expired private access." },
+            { error: "Your private access has expired or is invalid." },
             { status: 403 }
           );
         }
 
         const tokenEmail = access.email?.toLowerCase().trim();
+
+        if (!tokenEmail) {
+          return Response.json(
+            { error: "Private access could not be verified." },
+            { status: 403 }
+          );
+        }
 
         const hasNazPrivateAccess = await prisma.order.findFirst({
           where: {
@@ -121,19 +177,10 @@ export async function POST(req: Request) {
 
         if (!hasNazPrivateAccess) {
           return Response.json(
-            { error: "Private drop access not allowed." },
+            { error: "This private piece is not available for this access." },
             { status: 403 }
           );
         }
-      }
-
-      if (product.priceCents !== item.priceCents) {
-        return Response.json(
-          {
-            error: `Price changed for ${product.name}. Please refresh your cart.`,
-          },
-          { status: 400 }
-        );
       }
 
       const available = getAvailableStock(product, item.size);
@@ -141,7 +188,7 @@ export async function POST(req: Request) {
       if (available < item.quantity) {
         return Response.json(
           {
-            error: `Not enough stock for ${product.name} (${item.size}). Available: ${available}.`,
+            error: `Not enough stock for ${product.name} in size ${item.size}. Available: ${available}.`,
           },
           { status: 400 }
         );
@@ -183,13 +230,13 @@ export async function POST(req: Request) {
           unit_amount: item.priceCents,
           product_data: {
             name: `${item.name} / ${item.size}`,
+            description: "NAZ luxury streetwear",
           },
         },
       })
     );
 
-    const origin =
-      process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -204,13 +251,20 @@ export async function POST(req: Request) {
         allowed_countries: ["LT", "LV", "EE", "PL", "DE"],
       },
       customer_creation: "always",
+      allow_promotion_codes: false,
       metadata: {
         orderId: order.id,
+        brand: "NAZ",
+      },
+      custom_text: {
+        submit: {
+          message: "Secure payment processed by Stripe.",
+        },
       },
     });
 
     if (!session.url) {
-      throw new Error("Stripe session URL missing");
+      throw new Error("Stripe session URL is missing.");
     }
 
     await prisma.order.update({
@@ -227,7 +281,9 @@ export async function POST(req: Request) {
     return Response.json(
       {
         error:
-          error instanceof Error ? error.message : "Unable to start checkout.",
+          error instanceof Error
+            ? error.message
+            : "Unable to start checkout at the moment.",
       },
       { status: 500 }
     );
