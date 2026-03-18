@@ -1,4 +1,10 @@
 import * as React from "react";
+import {
+  EmailButton,
+  EmailSection,
+  EmailShell,
+  EmailText,
+} from "@/lib/emails/EmailShell";
 
 type OrderShippedVIPProps = {
   customerName?: string | null;
@@ -10,269 +16,56 @@ export default function OrderShippedVIP({
   trackingUrl,
 }: OrderShippedVIPProps) {
   return (
-    <div
-      style={{
-        margin: 0,
-        padding: 0,
-        backgroundColor: "#020202",
-        color: "#ffffff",
-        fontFamily: "Inter, Arial, Helvetica, sans-serif",
-      }}
+    <EmailShell
+      eyebrow="Private Access"
+      badge="Priority dispatch"
+      title="Your order is in motion."
+      previewText="Your private-access order has been prioritised and dispatched."
     >
-      <div
-        style={{
-          maxWidth: "620px",
-          margin: "0 auto",
-          padding: "28px 14px 40px",
-          backgroundColor: "#020202",
-        }}
-      >
-        <div
-          style={{
-            border: "1px solid rgba(255,255,255,0.10)",
-            borderRadius: "28px",
-            overflow: "hidden",
-            background:
-              "linear-gradient(180deg, #07090d 0%, #040404 38%, #050505 100%)",
-            boxShadow: "0 0 0 1px rgba(255,255,255,0.03) inset",
-          }}
-        >
-          <div
-            style={{
-              padding: "0",
-              position: "relative",
-              overflow: "hidden",
-              background:
-                "radial-gradient(circle at top center, rgba(255,255,255,0.08), transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0))",
-              borderBottom: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            <div
-              style={{
-                height: "6px",
-                background:
-                  "linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.35), rgba(255,255,255,0))",
-              }}
-            />
+      <div style={{ paddingTop: "8px" }}>
+        <EmailText>
+          {customerName ? `Hi ${customerName}, ` : "Hi, "}
+          your order is being handled with priority attention as part of private
+          access.
+          <br />
+          Your piece is now moving through our system with precision.
+        </EmailText>
+      </div>
 
-            <div
-              style={{
-                padding: "34px 28px 30px",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "30px",
-                  fontWeight: 800,
-                  letterSpacing: "0.34em",
-                  color: "#ffffff",
-                  lineHeight: 1,
-                }}
-              >
-                NAZ
-              </div>
+      <EmailSection title="Movement">
+        <EmailText>Track your shipment below.</EmailText>
 
-              <div
-                style={{
-                  marginTop: "12px",
-                  fontSize: "11px",
-                  letterSpacing: "0.24em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.46)",
-                }}
-              >
-                Private Access
-              </div>
-            </div>
-          </div>
-
-          <div style={{ padding: "34px 28px 10px" }}>
+        <div style={{ marginTop: "20px" }}>
+          {trackingUrl ? (
+            <EmailButton href={trackingUrl}>Track shipment</EmailButton>
+          ) : (
             <div
               style={{
                 display: "inline-block",
-                padding: "8px 12px",
-                borderRadius: "999px",
+                padding: "14px 18px",
+                borderRadius: "14px",
                 border: "1px solid rgba(255,255,255,0.10)",
                 backgroundColor: "rgba(255,255,255,0.03)",
-                fontSize: "11px",
-                letterSpacing: "0.22em",
+                color: "rgba(255,255,255,0.62)",
+                fontSize: "13px",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "rgba(255,255,255,0.52)",
-                marginBottom: "18px",
               }}
             >
-              Priority dispatch
+              Tracking updates soon
             </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "38px",
-                lineHeight: "1.06",
-                fontWeight: 800,
-                color: "#ffffff",
-                letterSpacing: "-0.03em",
-              }}
-            >
-              Your order is in motion.
-            </h1>
-
-            <p
-              style={{
-                margin: "18px 0 0",
-                fontSize: "16px",
-                lineHeight: "1.9",
-                color: "rgba(255,255,255,0.75)",
-              }}
-            >
-              {customerName ? `Hi ${customerName}, ` : "Hi, "}
-              your order is being handled with priority attention as part of
-              private access.
-              <br />
-              Your piece is now moving through our system with precision.
-            </p>
-          </div>
-
-          <div style={{ padding: "20px 28px 0" }}>
-            <div
-              style={{
-                border: "1px solid rgba(255,255,255,0.10)",
-                borderRadius: "22px",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02))",
-                padding: "22px 20px",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "12px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.48)",
-                  marginBottom: "12px",
-                }}
-              >
-                Movement
-              </div>
-
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "15px",
-                  lineHeight: "1.9",
-                  color: "rgba(255,255,255,0.76)",
-                }}
-              >
-                Track your shipment below.
-              </p>
-
-              {trackingUrl ? (
-                <div style={{ marginTop: "20px" }}>
-                  <a
-                    href={trackingUrl}
-                    style={{
-                      display: "inline-block",
-                      padding: "14px 22px",
-                      borderRadius: "14px",
-                      backgroundColor: "#ffffff",
-                      color: "#000000",
-                      textDecoration: "none",
-                      fontSize: "13px",
-                      fontWeight: 800,
-                      letterSpacing: "0.10em",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Track shipment
-                  </a>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    marginTop: "20px",
-                    display: "inline-block",
-                    padding: "14px 18px",
-                    borderRadius: "14px",
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    backgroundColor: "rgba(255,255,255,0.03)",
-                    color: "rgba(255,255,255,0.62)",
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Tracking updates soon
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ padding: "28px 28px 0" }}>
-            <div
-              style={{
-                padding: "22px 20px",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "20px",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "12px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.46)",
-                  marginBottom: "10px",
-                }}
-              >
-                A note from NAZ
-              </div>
-
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "15px",
-                  lineHeight: "1.9",
-                  color: "rgba(255,255,255,0.72)",
-                }}
-              >
-                Access defines timing.
-                <br />
-                You are already ahead.
-              </p>
-            </div>
-          </div>
-
-          <div
-            style={{
-              padding: "30px 28px 34px",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                borderTop: "1px solid rgba(255,255,255,0.10)",
-                paddingTop: "22px",
-              }}
-            >
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "12px",
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.42)",
-                }}
-              >
-                Go Naz — Win your own race
-              </p>
-            </div>
-          </div>
+          )}
         </div>
-      </div>
-    </div>
+      </EmailSection>
+
+      <EmailSection title="A note from NAZ">
+        <EmailText>
+          Access defines timing.
+          <br />
+          You are already ahead.
+        </EmailText>
+      </EmailSection>
+    </EmailShell>
   );
 }
