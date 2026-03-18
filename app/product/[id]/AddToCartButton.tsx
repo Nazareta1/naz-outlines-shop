@@ -6,6 +6,7 @@ export default function AddToCartButton({
   product,
   selectedSize,
   inStock,
+  accessToken,
 }: {
   product: {
     id: string;
@@ -16,6 +17,7 @@ export default function AddToCartButton({
   };
   selectedSize: "S" | "M" | "L";
   inStock: boolean;
+  accessToken?: string | null;
 }) {
   const { addToCart } = useCart();
 
@@ -30,6 +32,7 @@ export default function AddToCartButton({
       imageUrl: product.imageUrl ?? undefined,
       size: selectedSize,
       quantity: 1,
+      accessToken: accessToken ?? null,
     });
   }
 

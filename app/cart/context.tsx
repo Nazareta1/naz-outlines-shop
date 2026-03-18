@@ -18,6 +18,7 @@ export type CartItem = {
   imageUrl?: string;
   size: CartSize;
   quantity: number;
+  accessToken?: string | null;
 };
 
 type CartContextValue = {
@@ -69,7 +70,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (existing) {
         return prev.map((p) =>
           p.id === item.id && p.size === item.size
-            ? { ...p, quantity: p.quantity + item.quantity }
+            ? {
+                ...p,
+                quantity: p.quantity + item.quantity,
+                accessToken: item.accessToken ?? p.accessToken ?? null,
+              }
             : p
         );
       }
@@ -79,7 +84,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }
 
   function removeFromCart(productId: string, size: CartSize) {
-    setItems((prev) => prev.filter((p) => !(p.id === productId && p.size === size)));
+    setItems((prev) =>
+      prev.filter((p) => !(p.id === productId && p.size === size))
+    );
   }
 
   function decreaseQuantity(productId: string, size: CartSize) {

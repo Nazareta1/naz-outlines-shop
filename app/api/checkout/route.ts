@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { validatePrivateAccessToken } from "@/lib/private-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ type CartItem = {
   imageUrl?: string;
   size: "S" | "M" | "L";
   quantity: number;
+  accessToken?: string | null;
 };
 
 function getAvailableStock(
@@ -47,6 +49,18 @@ export async function POST(req: Request) {
         id: { in: productIds },
         active: true,
       },
+      select: {
+        id: true,
+        name: true,
+        priceCents: true,
+        currency: true,
+        active: true,
+        stockS: true,
+        stockM: true,
+        stockL: true,
+        isPrivateDrop: true,
+        dropSlug: true,
+      },
     });
 
     if (products.length !== productIds.length) {
@@ -64,6 +78,53 @@ export async function POST(req: Request) {
           { error: `Product not found: ${item.name}` },
           { status: 400 }
         );
+      }
+
+      if (product.isPrivateDrop) {
+        const token = item.accessToken;
+
+        if (!token) {
+          return Response.json(
+            { error: "Private drop access required." },
+            { status: 403 }
+          );
+        }
+
+        if (!product.dropSlug) {
+          return Response.json(
+            { error: "Invalid drop configuration." },
+            { status: 400 }
+          );
+        }
+
+        const access = await validatePrivateAccessToken({
+          token,
+          dropSlug: product.dropSlug,
+        });
+
+        if (!access) {
+          return Response.json(
+            { error: "Invalid or expired private access." },
+            { status: 403 }
+          );
+        }
+
+        const tokenEmail = access.email?.toLowerCase().trim();
+
+        const hasNazPrivateAccess = await prisma.order.findFirst({
+          where: {
+            email: tokenEmail,
+            nazPrivateAccess: true,
+          },
+          select: { id: true },
+        });
+
+        if (!hasNazPrivateAccess) {
+          return Response.json(
+            { error: "Private drop access not allowed." },
+            { status: 403 }
+          );
+        }
       }
 
       if (product.priceCents !== item.priceCents) {
@@ -114,7 +175,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // STRIPE LINE ITEMS
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
       (item) => ({
         quantity: item.quantity,
