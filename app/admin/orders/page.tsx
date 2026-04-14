@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import StatusForm from "./StatusForm";
-import ShippingForm from "./ShippingForm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,352 +31,367 @@ function statusBadge(status: string) {
 
 function shortId(id?: string | null) {
   if (!id) return "—";
-  return id.length > 16 ? `${id.slice(0, 10)}…${id.slice(-6)}` : id;
+  return id.length > 18 ? `${id.slice(0, 10)}…${id.slice(-6)}` : id;
 }
 
-export default async function AdminOrderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
+function buildQueryString(params: {
+  paymentStatus?: string;
+  fulfillmentStatus?: string;
+  q?: string;
+  sort?: string;
 }) {
-  const { id } = await params;
+  const search = new URLSearchParams();
 
-  try {
-    const order = await prisma.order.findUnique({
-      where: { id },
-      include: {
-        items: {
-          include: { product: true },
+  if (params.paymentStatus && params.paymentStatus !== "all") {
+    search.set("paymentStatus", params.paymentStatus);
+  }
+
+  if (params.fulfillmentStatus && params.fulfillmentStatus !== "all") {
+    search.set("fulfillmentStatus", params.fulfillmentStatus);
+  }
+
+  if (params.q) {
+    search.set("q", params.q);
+  }
+
+  if (params.sort && params.sort !== "new") {
+    search.set("sort", params.sort);
+  }
+
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    paymentStatus?: string;
+    fulfillmentStatus?: string;
+    q?: string;
+    sort?: string;
+  }>;
+}) {
+  const params = await searchParams;
+
+  const paymentStatus = params.paymentStatus || "all";
+  const fulfillmentStatus = params.fulfillmentStatus || "all";
+  const q = (params.q || "").trim();
+  const sort = params.sort === "old" ? "old" : "new";
+
+  const where = {
+    ...(paymentStatus !== "all" ? { paymentStatus } : {}),
+    ...(fulfillmentStatus !== "all" ? { fulfillmentStatus } : {}),
+    ...(q
+      ? {
+          OR: [
+            { id: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+            { name: { contains: q, mode: "insensitive" as const } },
+            { stripeSessionId: { contains: q, mode: "insensitive" as const } },
+            { stripePaymentId: { contains: q, mode: "insensitive" as const } },
+            { trackingNumber: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  const orders = await prisma.order.findMany({
+    where,
+    include: {
+      items: {
+        include: {
+          product: true,
         },
       },
-    });
+    },
+    orderBy: {
+      createdAt: sort === "old" ? "asc" : "desc",
+    },
+  });
 
-    if (!order) {
-      return (
-        <div className="max-w-4xl mx-auto p-10">
-          <div className="mb-6">
+  const totalOrders = orders.length;
+  const paidOrders = orders.filter((o) => o.paymentStatus === "paid").length;
+  const processingOrders = orders.filter(
+    (o) => o.fulfillmentStatus === "processing"
+  ).length;
+  const shippedOrders = orders.filter(
+    (o) => o.fulfillmentStatus === "shipped"
+  ).length;
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 md:p-10">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Orders</h1>
+          <p className="text-sm text-gray-500 mt-2">
+            Manage payments, fulfillment, shipping, and order details.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/admin/contact"
+            className="inline-flex items-center px-3 py-2 rounded-lg border text-sm hover:bg-gray-50"
+          >
+            Contact Messages
+          </Link>
+
+          <Link
+            href="/admin/private-drop"
+            className="inline-flex items-center px-3 py-2 rounded-lg border text-sm hover:bg-gray-50"
+          >
+            Private Drop
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4 mb-8">
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-gray-500">
+            Total orders
+          </div>
+          <div className="mt-2 text-2xl font-bold">{totalOrders}</div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-gray-500">
+            Paid
+          </div>
+          <div className="mt-2 text-2xl font-bold">{paidOrders}</div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-gray-500">
+            Processing
+          </div>
+          <div className="mt-2 text-2xl font-bold">{processingOrders}</div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-gray-500">
+            Shipped
+          </div>
+          <div className="mt-2 text-2xl font-bold">{shippedOrders}</div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border bg-white p-5 shadow-sm mb-8">
+        <form className="grid gap-4 md:grid-cols-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-gray-500 mb-2">
+              Search
+            </label>
+            <input
+              type="text"
+              name="q"
+              defaultValue={q}
+              placeholder="Order ID, email, name..."
+              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-gray-500 mb-2">
+              Payment status
+            </label>
+            <select
+              name="paymentStatus"
+              defaultValue={paymentStatus}
+              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
+            >
+              <option value="all">All</option>
+              <option value="pending">pending</option>
+              <option value="paid">paid</option>
+              <option value="failed">failed</option>
+              <option value="refunded">refunded</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-gray-500 mb-2">
+              Fulfillment status
+            </label>
+            <select
+              name="fulfillmentStatus"
+              defaultValue={fulfillmentStatus}
+              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
+            >
+              <option value="all">All</option>
+              <option value="unfulfilled">unfulfilled</option>
+              <option value="processing">processing</option>
+              <option value="fulfilled">fulfilled</option>
+              <option value="shipped">shipped</option>
+              <option value="delivered">delivered</option>
+              <option value="cancelled">cancelled</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-gray-500 mb-2">
+              Sort
+            </label>
+            <select
+              name="sort"
+              defaultValue={sort}
+              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
+            >
+              <option value="new">Newest first</option>
+              <option value="old">Oldest first</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-4 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-black text-white text-sm hover:opacity-90"
+            >
+              Apply filters
+            </button>
+
             <Link
               href="/admin/orders"
-              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+              className="inline-flex items-center px-4 py-2 rounded-lg border text-sm hover:bg-gray-50"
             >
-              ← Back to orders
+              Reset
             </Link>
           </div>
+        </form>
+      </div>
 
-          <h1 className="text-2xl font-bold">Order not found</h1>
-          <div className="text-sm text-gray-500 mt-2">ID: {id}</div>
-        </div>
-      );
-    }
+      <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr className="text-left">
+                <th className="p-4 font-semibold">Order</th>
+                <th className="p-4 font-semibold">Customer</th>
+                <th className="p-4 font-semibold">Items</th>
+                <th className="p-4 font-semibold">Payment</th>
+                <th className="p-4 font-semibold">Fulfillment</th>
+                <th className="p-4 font-semibold">Total</th>
+                <th className="p-4 font-semibold">Created</th>
+                <th className="p-4 font-semibold">Actions</th>
+              </tr>
+            </thead>
 
-    const itemsTotal = order.items.reduce(
-      (sum, i) => sum + i.priceCents * i.quantity,
-      0
-    );
+            <tbody>
+              {orders.map((order) => {
+                const itemCount = order.items.reduce(
+                  (sum, item) => sum + item.quantity,
+                  0
+                );
 
-    return (
-      <div className="max-w-5xl mx-auto p-6 md:p-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <Link
-            href="/admin/orders"
-            className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 w-fit"
-          >
-            ← Back
-          </Link>
+                return (
+                  <tr key={order.id} className="border-b last:border-b-0 align-top">
+                    <td className="p-4">
+                      <div className="font-medium">{shortId(order.id)}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Session: {shortId(order.stripeSessionId)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Payment: {shortId(order.stripePaymentId)}
+                      </div>
+                    </td>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={`/api/admin/orders/${order.id}/packing-slip`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
-            >
-              Print Packing Slip
-            </a>
+                    <td className="p-4">
+                      <div className="font-medium">{order.name || "—"}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {order.email || "—"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {order.country || "—"}
+                      </div>
+                    </td>
 
-            <Link
-              href="/admin/contact"
-              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
-            >
-              Contact Messages
-            </Link>
-          </div>
-        </div>
+                    <td className="p-4">
+                      <div className="font-medium">{itemCount}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {order.items.slice(0, 2).map((item, index) => (
+                          <div key={item.id}>
+                            {item.product?.name ?? item.name}
+                            {item.size ? ` · ${item.size}` : ""}
+                            {index === 1 && order.items.length > 2
+                              ? " ..."
+                              : ""}
+                          </div>
+                        ))}
+                      </div>
+                    </td>
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span
-                className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
-                  order.paymentStatus
-                )}`}
-              >
-                {order.paymentStatus}
-              </span>
+                    <td className="p-4">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
+                          order.paymentStatus
+                        )}`}
+                      >
+                        {order.paymentStatus}
+                      </span>
+                    </td>
 
-              <StatusForm
-                orderId={order.id}
-                type="payment"
-                initialStatus={order.paymentStatus}
-              />
-            </div>
+                    <td className="p-4">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
+                          order.fulfillmentStatus
+                        )}`}
+                      >
+                        {order.fulfillmentStatus}
+                      </span>
 
-            <div className="flex items-center gap-3 flex-wrap">
-              <span
-                className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
-                  order.fulfillmentStatus
-                )}`}
-              >
-                {order.fulfillmentStatus}
-              </span>
+                      {order.trackingNumber ? (
+                        <div className="text-xs text-gray-500 mt-2">
+                          Tracking: {order.trackingNumber}
+                        </div>
+                      ) : null}
+                    </td>
 
-              <StatusForm
-                orderId={order.id}
-                type="fulfillment"
-                initialStatus={order.fulfillmentStatus}
-              />
-            </div>
-          </div>
-        </div>
+                    <td className="p-4 font-semibold">
+                      {formatMoney(order.totalCents, order.currency)}
+                    </td>
 
-        <div className="border rounded-2xl shadow-sm bg-white p-6 mb-6">
-          <h1 className="text-2xl font-bold mb-2">Order {order.id}</h1>
-          <div className="text-sm text-gray-600">
-            Created: {new Date(order.createdAt).toLocaleString()}
-          </div>
+                    <td className="p-4 text-gray-600">
+                      {new Date(order.createdAt).toLocaleString()}
+                    </td>
 
-          <div className="grid md:grid-cols-2 gap-6 mt-6">
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Customer</h2>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div>
-                  <span className="text-gray-500">Name:</span>{" "}
-                  {order.name || "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Email:</span>{" "}
-                  {order.email || "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Phone:</span>{" "}
-                  {order.phone || "—"}
-                </div>
-              </div>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-2">
+                        <Link
+                          href={`/admin/orders/${order.id}${buildQueryString({
+                            paymentStatus,
+                            fulfillmentStatus,
+                            q,
+                            sort,
+                          })}`}
+                          className="inline-flex items-center px-3 py-1.5 rounded-lg border text-xs hover:bg-gray-50"
+                        >
+                          Open
+                        </Link>
 
-              <h2 className="text-lg font-semibold mt-6 mb-2">
-                Shipping address
-              </h2>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div>{order.addressLine1 || "—"}</div>
-                {order.addressLine2 ? <div>{order.addressLine2}</div> : null}
-                <div>
-                  {order.postalCode || "—"} {order.city || ""}
-                </div>
-                <div>{order.region || "—"}</div>
-                <div>{order.country || "—"}</div>
-              </div>
+                        <a
+                          href={`/api/admin/orders/${order.id}/packing-slip`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center px-3 py-1.5 rounded-lg border text-xs hover:bg-gray-50"
+                        >
+                          Print slip
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
-              <h2 className="text-lg font-semibold mt-6 mb-2">
-                NAZ Private Access
-              </h2>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div>
-                  <span className="text-gray-500">Access:</span>{" "}
-                  {order.nazPrivateAccess ? "Granted" : "Not granted"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Granted at:</span>{" "}
-                  {order.nazPrivateAccessGrantedAt
-                    ? new Date(order.nazPrivateAccessGrantedAt).toLocaleString()
-                    : "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Access email sent:</span>{" "}
-                  {order.nazPrivateAccessEmailSentAt
-                    ? new Date(
-                        order.nazPrivateAccessEmailSentAt
-                      ).toLocaleString()
-                    : "—"}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Payment</h2>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div>
-                  <span className="text-gray-500">Stripe session:</span>{" "}
-                  {shortId(order.stripeSessionId)}
-                </div>
-                <div>
-                  <span className="text-gray-500">Stripe payment:</span>{" "}
-                  {shortId(order.stripePaymentId)}
-                </div>
-                <div>
-                  <span className="text-gray-500">Currency:</span>{" "}
-                  {order.currency}
-                </div>
-              </div>
-
-              <h2 className="text-lg font-semibold mt-6 mb-2">Totals</h2>
-              <div className="text-sm text-gray-700 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Items total</span>
-                  <span>{formatMoney(itemsTotal, order.currency)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span>{formatMoney(order.subtotalCents, order.currency)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Shipping</span>
-                  <span>{formatMoney(order.shippingCents, order.currency)}</span>
-                </div>
-                <div className="flex justify-between font-semibold pt-2 border-t">
-                  <span>Total</span>
-                  <span>{formatMoney(order.totalCents, order.currency)}</span>
-                </div>
-              </div>
-
-              <h2 className="text-lg font-semibold mt-6 mb-2">
-                Fulfillment timeline
-              </h2>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div>
-                  <span className="text-gray-500">Carrier:</span>{" "}
-                  {order.shippingCarrier || "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Tracking number:</span>{" "}
-                  {order.trackingNumber || "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Tracking URL:</span>{" "}
-                  {order.trackingUrl ? (
-                    <a
-                      href={order.trackingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 hover:underline break-all"
-                    >
-                      Open tracking
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </div>
-                <div>
-                  <span className="text-gray-500">Shipped at:</span>{" "}
-                  {order.shippedAt
-                    ? new Date(order.shippedAt).toLocaleString()
-                    : "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Shipping email sent:</span>{" "}
-                  {order.shippingEmailSentAt
-                    ? new Date(order.shippingEmailSentAt).toLocaleString()
-                    : "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Delivered at:</span>{" "}
-                  {order.deliveredAt
-                    ? new Date(order.deliveredAt).toLocaleString()
-                    : "—"}
-                </div>
-                <div>
-                  <span className="text-gray-500">Delivered email sent:</span>{" "}
-                  {order.deliveredEmailSentAt
-                    ? new Date(order.deliveredEmailSentAt).toLocaleString()
-                    : "—"}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <ShippingForm
-            orderId={order.id}
-            initialCarrier={order.shippingCarrier}
-            initialTracking={order.trackingNumber}
-            initialFulfillmentStatus={order.fulfillmentStatus}
-          />
-        </div>
-
-        <div className="border rounded-2xl shadow-sm bg-white p-6">
-          <h2 className="text-xl font-bold mb-4">Items</h2>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr className="text-left">
-                  <th className="p-3 font-semibold">Product</th>
-                  <th className="p-3 font-semibold">Qty</th>
-                  <th className="p-3 font-semibold">Price</th>
-                  <th className="p-3 font-semibold">Line total</th>
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-gray-500">
+                    No orders found.
+                  </td>
                 </tr>
-              </thead>
-
-              <tbody>
-                {order.items.map((item) => (
-                  <tr key={item.id} className="border-b last:border-b-0">
-                    <td className="p-3">
-                      <div className="font-medium">
-                        {item.product?.name ?? item.name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Product ID: {item.productId}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Size: {item.size || "—"}
-                      </div>
-                    </td>
-                    <td className="p-3">{item.quantity}</td>
-                    <td className="p-3">
-                      {formatMoney(item.priceCents, order.currency)}
-                    </td>
-                    <td className="p-3 font-semibold">
-                      {formatMoney(
-                        item.priceCents * item.quantity,
-                        order.currency
-                      )}
-                    </td>
-                  </tr>
-                ))}
-
-                {order.items.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-gray-500" colSpan={4}>
-                      No items found for this order.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-    );
-  } catch (e: any) {
-    console.error("Admin order detail page crashed:", e);
-
-    return (
-      <div className="max-w-4xl mx-auto p-10">
-        <div className="mb-6">
-          <Link
-            href="/admin/orders"
-            className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
-          >
-            ← Back to orders
-          </Link>
-        </div>
-
-        <h1 className="text-2xl font-bold">Server error</h1>
-        <p className="text-sm text-gray-600 mt-2">
-          Open Vercel logs to see the exact Prisma/DB error.
-        </p>
-        <p className="text-xs text-gray-500 mt-4">Order ID: {id}</p>
-      </div>
-    );
-  }
+    </div>
+  );
 }

@@ -16,14 +16,13 @@ function formatMoney(cents: number, currency: string) {
 function statusBadge(status: string) {
   const s = (status || "").toLowerCase();
 
-  // payment
   if (s === "paid") return "bg-green-100 text-green-800 border-green-200";
   if (s === "pending") return "bg-yellow-100 text-yellow-800 border-yellow-200";
   if (s === "failed") return "bg-red-100 text-red-800 border-red-200";
   if (s === "refunded") return "bg-gray-100 text-gray-800 border-gray-200";
 
-  // fulfillment
   if (s === "unfulfilled") return "bg-slate-100 text-slate-800 border-slate-200";
+  if (s === "processing") return "bg-orange-100 text-orange-800 border-orange-200";
   if (s === "fulfilled") return "bg-blue-100 text-blue-800 border-blue-200";
   if (s === "shipped") return "bg-purple-100 text-purple-800 border-purple-200";
   if (s === "delivered") return "bg-emerald-100 text-emerald-800 border-emerald-200";
@@ -87,6 +86,26 @@ export default async function AdminOrderDetailPage({
             ← Back
           </Link>
 
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={`/api/admin/orders/${order.id}/packing-slip`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+            >
+              Print Packing Slip
+            </a>
+
+            <Link
+              href="/admin/contact"
+              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+            >
+              Contact Messages
+            </Link>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
             <div className="flex items-center gap-3 flex-wrap">
               <span
