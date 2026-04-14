@@ -1,191 +1,384 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import StatusForm from "./StatusForm";
+import ShippingForm from "./ShippingForm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function formatMoney(cents: number, currency: string) {
   const amount = (cents / 100).toFixed(2);
-  const cur = (currency || "EUR").toUpperCase();
-  return cur === "EUR" ? `${amount} €` : `${amount} ${cur}`;
+  return currency?.toUpperCase() === "EUR"
+    ? `${amount} €`
+    : `${amount} ${currency}`;
 }
 
-function badge(status: string) {
+function statusBadge(status: string) {
   const s = (status || "").toLowerCase();
 
-  if (s === "paid") return "border-green-500/20 bg-green-500/10 text-green-200";
-  if (s === "pending") return "border-yellow-500/20 bg-yellow-500/10 text-yellow-200";
-  if (s === "failed") return "border-red-500/20 bg-red-500/10 text-red-200";
-  if (s === "refunded") return "border-zinc-500/20 bg-zinc-500/10 text-zinc-200";
+  if (s === "paid") return "bg-green-100 text-green-800 border-green-200";
+  if (s === "pending") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  if (s === "failed") return "bg-red-100 text-red-800 border-red-200";
+  if (s === "refunded") return "bg-gray-100 text-gray-800 border-gray-200";
 
-  if (s === "unfulfilled") return "border-white/10 bg-white/[0.03] text-white/70";
-  if (s === "fulfilled") return "border-blue-500/20 bg-blue-500/10 text-blue-200";
-  if (s === "shipped") return "border-purple-500/20 bg-purple-500/10 text-purple-200";
-  if (s === "delivered") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
-  if (s === "cancelled") return "border-zinc-500/20 bg-zinc-500/10 text-zinc-200";
+  if (s === "unfulfilled") return "bg-slate-100 text-slate-800 border-slate-200";
+  if (s === "processing") return "bg-orange-100 text-orange-800 border-orange-200";
+  if (s === "fulfilled") return "bg-blue-100 text-blue-800 border-blue-200";
+  if (s === "shipped") return "bg-purple-100 text-purple-800 border-purple-200";
+  if (s === "delivered") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (s === "cancelled") return "bg-zinc-100 text-zinc-800 border-zinc-200";
 
-  return "border-white/10 bg-white/[0.03] text-white/70";
+  return "bg-slate-100 text-slate-800 border-slate-200";
 }
 
-export default async function AdminOrdersPage() {
-  const orders = await prisma.order.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: {
-      id: true,
-      createdAt: true,
-      email: true,
-      name: true,
-      country: true,
-      currency: true,
-      totalCents: true,
-      paymentStatus: true,
-      fulfillmentStatus: true,
-      shippingCarrier: true,
-      trackingNumber: true,
-      items: { select: { quantity: true } },
-    },
-  });
+function shortId(id?: string | null) {
+  if (!id) return "—";
+  return id.length > 16 ? `${id.slice(0, 10)}…${id.slice(-6)}` : id;
+}
 
-  const totalCount = orders.length;
+export default async function AdminOrderDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
-  return (
-    <main className="min-h-screen bg-[#0E0E10] text-[#F2F2F2]">
-      <div className="mx-auto max-w-6xl px-6 pt-12 pb-24">
-        <div className="mb-8 flex flex-wrap items-center gap-3">
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: { product: true },
+        },
+      },
+    });
+
+    if (!order) {
+      return (
+        <div className="max-w-4xl mx-auto p-10">
+          <div className="mb-6">
+            <Link
+              href="/admin/orders"
+              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+            >
+              ← Back to orders
+            </Link>
+          </div>
+
+          <h1 className="text-2xl font-bold">Order not found</h1>
+          <div className="text-sm text-gray-500 mt-2">ID: {id}</div>
+        </div>
+      );
+    }
+
+    const itemsTotal = order.items.reduce(
+      (sum, i) => sum + i.priceCents * i.quantity,
+      0
+    );
+
+    return (
+      <div className="max-w-5xl mx-auto p-6 md:p-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <Link
             href="/admin/orders"
-            className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+            className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 w-fit"
           >
-            Orders
+            ← Back
           </Link>
 
-          <Link
-            href="/admin/private-drop"
-            className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white/70 transition hover:bg-white/[0.06] hover:text-white"
-          >
-            Private Drop
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={`/api/admin/orders/${order.id}/packing-slip`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+            >
+              Print Packing Slip
+            </a>
 
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white/70 transition hover:bg-white/[0.06] hover:text-white"
-          >
-            Back to store
-          </Link>
+            <Link
+              href="/admin/contact"
+              className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+            >
+              Contact Messages
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-end justify-between gap-6 border-b border-white/10 pb-10">
-          <div>
-            <div className="text-xs tracking-[0.35em] uppercase text-white/45">
-              Admin
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
+                  order.paymentStatus
+                )}`}
+              >
+                {order.paymentStatus}
+              </span>
+
+              <StatusForm
+                orderId={order.id}
+                type="payment"
+                initialStatus={order.paymentStatus}
+              />
             </div>
-            <h1 className="mt-4 text-4xl md:text-5xl font-semibold tracking-[-0.02em] leading-[1.05]">
-              Orders
-            </h1>
-            <div className="mt-4 text-sm text-white/55">
-              Showing {totalCount} most recent
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${statusBadge(
+                  order.fulfillmentStatus
+                )}`}
+              >
+                {order.fulfillmentStatus}
+              </span>
+
+              <StatusForm
+                orderId={order.id}
+                type="fulfillment"
+                initialStatus={order.fulfillmentStatus}
+              />
             </div>
           </div>
-
-          <Link
-            href="/admin/private-drop"
-            className="hidden sm:inline-flex text-[11px] tracking-[0.28em] uppercase text-white/70 hover:text-white transition"
-          >
-            Go to private drop →
-          </Link>
         </div>
 
-        {orders.length === 0 ? (
-          <div className="mt-12 border border-white/10 bg-[#141416] rounded-[28px] p-10">
-            <div className="text-xs tracking-[0.35em] uppercase text-white/45">
-              Empty
-            </div>
-            <div className="mt-4 text-white/65">No orders yet.</div>
+        <div className="border rounded-2xl shadow-sm bg-white p-6 mb-6">
+          <h1 className="text-2xl font-bold mb-2">Order {order.id}</h1>
+          <div className="text-sm text-gray-600">
+            Created: {new Date(order.createdAt).toLocaleString()}
           </div>
-        ) : (
-          <div className="mt-12 overflow-hidden rounded-[28px] border border-white/10 bg-[#141416]">
-            <div className="grid grid-cols-12 gap-3 border-b border-white/10 px-6 py-4 text-[11px] tracking-[0.28em] uppercase text-white/45">
-              <div className="col-span-4">Order</div>
-              <div className="col-span-3">Customer</div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-2 text-right">Total</div>
-              <div className="col-span-1 text-right">Items</div>
+
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Customer</h2>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>
+                  <span className="text-gray-500">Name:</span>{" "}
+                  {order.name || "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Email:</span>{" "}
+                  {order.email || "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Phone:</span>{" "}
+                  {order.phone || "—"}
+                </div>
+              </div>
+
+              <h2 className="text-lg font-semibold mt-6 mb-2">
+                Shipping address
+              </h2>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>{order.addressLine1 || "—"}</div>
+                {order.addressLine2 ? <div>{order.addressLine2}</div> : null}
+                <div>
+                  {order.postalCode || "—"} {order.city || ""}
+                </div>
+                <div>{order.region || "—"}</div>
+                <div>{order.country || "—"}</div>
+              </div>
+
+              <h2 className="text-lg font-semibold mt-6 mb-2">
+                NAZ Private Access
+              </h2>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>
+                  <span className="text-gray-500">Access:</span>{" "}
+                  {order.nazPrivateAccess ? "Granted" : "Not granted"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Granted at:</span>{" "}
+                  {order.nazPrivateAccessGrantedAt
+                    ? new Date(order.nazPrivateAccessGrantedAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Access email sent:</span>{" "}
+                  {order.nazPrivateAccessEmailSentAt
+                    ? new Date(
+                        order.nazPrivateAccessEmailSentAt
+                      ).toLocaleString()
+                    : "—"}
+                </div>
+              </div>
             </div>
 
-            {orders.map((o) => {
-              const itemsCount = o.items.reduce((acc, it) => acc + it.quantity, 0);
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Payment</h2>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>
+                  <span className="text-gray-500">Stripe session:</span>{" "}
+                  {shortId(order.stripeSessionId)}
+                </div>
+                <div>
+                  <span className="text-gray-500">Stripe payment:</span>{" "}
+                  {shortId(order.stripePaymentId)}
+                </div>
+                <div>
+                  <span className="text-gray-500">Currency:</span>{" "}
+                  {order.currency}
+                </div>
+              </div>
 
-              return (
-                <Link
-                  key={o.id}
-                  href={`/admin/orders/${o.id}`}
-                  className="block px-6 py-5 hover:bg-white/[0.04] transition border-b border-white/10 last:border-b-0"
-                >
-                  <div className="grid grid-cols-12 gap-3 items-center">
-                    <div className="col-span-4 min-w-0">
-                      <div className="text-sm text-white/85 truncate">{o.id}</div>
-                      <div className="mt-1 text-xs text-white/45">
-                        {new Date(o.createdAt).toLocaleString()}
-                        {o.country ? ` • ${o.country}` : ""}
-                      </div>
-                      {o.trackingNumber ? (
-                        <div className="mt-1 text-xs text-white/45">
-                          {o.shippingCarrier ? `${o.shippingCarrier} • ` : ""}
-                          {o.trackingNumber}
-                        </div>
-                      ) : null}
-                    </div>
+              <h2 className="text-lg font-semibold mt-6 mb-2">Totals</h2>
+              <div className="text-sm text-gray-700 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Items total</span>
+                  <span>{formatMoney(itemsTotal, order.currency)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Subtotal</span>
+                  <span>{formatMoney(order.subtotalCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Shipping</span>
+                  <span>{formatMoney(order.shippingCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between font-semibold pt-2 border-t">
+                  <span>Total</span>
+                  <span>{formatMoney(order.totalCents, order.currency)}</span>
+                </div>
+              </div>
 
-                    <div className="col-span-3 min-w-0">
-                      <div className="text-sm text-white/80 truncate">
-                        {o.name || "—"}
-                      </div>
-                      <div className="mt-1 text-xs text-white/45 truncate">
-                        {o.email || "—"}
-                      </div>
-                    </div>
-
-                    <div className="col-span-2 flex flex-col gap-2">
-                      <span
-                        className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(
-                          o.paymentStatus
-                        )}`}
-                      >
-                        {o.paymentStatus}
-                      </span>
-                      <span
-                        className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs ${badge(
-                          o.fulfillmentStatus
-                        )}`}
-                      >
-                        {o.fulfillmentStatus}
-                      </span>
-                    </div>
-
-                    <div className="col-span-2 text-right">
-                      <div className="text-sm font-semibold text-white/85">
-                        {formatMoney(o.totalCents, o.currency)}
-                      </div>
-                      <div className="mt-1 text-xs text-white/45">
-                        {o.currency}
-                      </div>
-                    </div>
-
-                    <div className="col-span-1 text-right text-sm text-white/70">
-                      {itemsCount}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+              <h2 className="text-lg font-semibold mt-6 mb-2">
+                Fulfillment timeline
+              </h2>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>
+                  <span className="text-gray-500">Carrier:</span>{" "}
+                  {order.shippingCarrier || "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Tracking number:</span>{" "}
+                  {order.trackingNumber || "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Tracking URL:</span>{" "}
+                  {order.trackingUrl ? (
+                    <a
+                      href={order.trackingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline break-all"
+                    >
+                      Open tracking
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+                <div>
+                  <span className="text-gray-500">Shipped at:</span>{" "}
+                  {order.shippedAt
+                    ? new Date(order.shippedAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Shipping email sent:</span>{" "}
+                  {order.shippingEmailSentAt
+                    ? new Date(order.shippingEmailSentAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Delivered at:</span>{" "}
+                  {order.deliveredAt
+                    ? new Date(order.deliveredAt).toLocaleString()
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-500">Delivered email sent:</span>{" "}
+                  {order.deliveredEmailSentAt
+                    ? new Date(order.deliveredEmailSentAt).toLocaleString()
+                    : "—"}
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
-        <div className="mt-10 text-[11px] tracking-[0.28em] uppercase text-white/40">
-          Controlled operations
+        <div className="mb-6">
+          <ShippingForm
+            orderId={order.id}
+            initialCarrier={order.shippingCarrier}
+            initialTracking={order.trackingNumber}
+            initialFulfillmentStatus={order.fulfillmentStatus}
+          />
+        </div>
+
+        <div className="border rounded-2xl shadow-sm bg-white p-6">
+          <h2 className="text-xl font-bold mb-4">Items</h2>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr className="text-left">
+                  <th className="p-3 font-semibold">Product</th>
+                  <th className="p-3 font-semibold">Qty</th>
+                  <th className="p-3 font-semibold">Price</th>
+                  <th className="p-3 font-semibold">Line total</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {order.items.map((item) => (
+                  <tr key={item.id} className="border-b last:border-b-0">
+                    <td className="p-3">
+                      <div className="font-medium">
+                        {item.product?.name ?? item.name}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Product ID: {item.productId}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Size: {item.size || "—"}
+                      </div>
+                    </td>
+                    <td className="p-3">{item.quantity}</td>
+                    <td className="p-3">
+                      {formatMoney(item.priceCents, order.currency)}
+                    </td>
+                    <td className="p-3 font-semibold">
+                      {formatMoney(
+                        item.priceCents * item.quantity,
+                        order.currency
+                      )}
+                    </td>
+                  </tr>
+                ))}
+
+                {order.items.length === 0 && (
+                  <tr>
+                    <td className="p-4 text-gray-500" colSpan={4}>
+                      No items found for this order.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </main>
-  );
+    );
+  } catch (e: any) {
+    console.error("Admin order detail page crashed:", e);
+
+    return (
+      <div className="max-w-4xl mx-auto p-10">
+        <div className="mb-6">
+          <Link
+            href="/admin/orders"
+            className="inline-flex items-center px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+          >
+            ← Back to orders
+          </Link>
+        </div>
+
+        <h1 className="text-2xl font-bold">Server error</h1>
+        <p className="text-sm text-gray-600 mt-2">
+          Open Vercel logs to see the exact Prisma/DB error.
+        </p>
+        <p className="text-xs text-gray-500 mt-4">Order ID: {id}</p>
+      </div>
+    );
+  }
 }

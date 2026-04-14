@@ -19,7 +19,7 @@ model Product {
   stockS Int @default(10)
   stockM Int @default(10)
   stockL Int @default(10)
-  
+
   isPrivateDrop Boolean @default(false)
   dropSlug      String?
 
@@ -93,6 +93,7 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
 }
+
 model PrivateAccessToken {
   id         String   @id @default(cuid())
   email      String
@@ -105,4 +106,21 @@ model PrivateAccessToken {
   @@index([email])
   @@index([dropSlug])
   @@index([token])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name      String
+  email     String
+  subject   String?
+  message   String
+  status    String   @default("new")
+  ipAddress String?
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([email])
 }
